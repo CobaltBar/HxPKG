@@ -1,0 +1,18 @@
+{
+	"name": "hxpkg",
+	"url": "https://github.com/CobaltBar/hxpkg/",
+	"license": "MIT",
+	"tags": [
+		"tools",
+		"helpers",
+		"installation"
+	],
+	"description": "Local haxelib package installer",
+	"version": "1.0.0",
+	"classPath": "hxpkg",
+	"releasenote": "Initial Release",
+	"contributors": [
+		"CobaltBar"
+	],
+	"main": "hxpkg.Main"
+}
