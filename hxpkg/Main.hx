@@ -7,17 +7,24 @@ import sys.io.Process;
 
 using StringTools;
 
-typedef HxPKGFile = Array<
-	{
-		var name:String;
-		var version:String;
-		var link:String;
-		var branch:String;
-	}>
+typedef HxPKGFile = Array<PKGInfo>;
+
+typedef PKGInfo =
+{
+	var name:String;
+	var version:String;
+	var link:String;
+	var branch:String;
+}
+
+typedef InstallConfig =
+{
+	config:Int,
+	info:PKGInfo
+};
 
 class Main
 {
-	static var verbose:Bool = false;
 	static var quiet:Bool = false;
 
 	static function main()
@@ -26,11 +33,8 @@ class Main
 		args.pop();
 
 		quiet = args.contains('--quiet');
-		verbose = args.contains('--verbose');
-		quiet = !verbose;
-		verbose = !quiet;
 
-		if (verbose || !quiet)
+		if (!quiet)
 			Sys.println("\033[38;5;208m _   _       \033[38;5;33m ____  \033[38;5;33m _  __\033[38;5;33m ____ \n\033[38;5;208m| | | |\033[38;5;202m__  __\033[38;5;33m|  _ \\ \033[38;5;33m| |/ /\033[38;5;33m/ ___|\n\033[38;5;208m| |_| |\033[38;5;202m\\ \\/ /\033[38;5;33m| |_) |\033[38;5;33m| ' /\033[38;5;33m| |  _ \n\033[38;5;208m|  _  |\033[38;5;202m >  < \033[38;5;33m|  __/ \033[38;5;33m| . \\\033[38;5;33m| |_| |\n\033[38;5;208m|_| |_|\033[38;5;202m/_/\\_\\\033[38;5;33m|_|    \033[38;5;33m|_|\\_\\\033[38;5;33m\\____|\033[0;0m\n");
 
 		switch (args[0])
@@ -45,7 +49,6 @@ class Main
 				var hxpkgFile:HxPKGFile = Json.parse(File.getContent('.hxpkg'));
 
 				if (FileSystem.exists('.haxelib'))
-				{
 					if (!args.contains('--force'))
 					{
 						Sys.println('Local haxelib repository (.haxelib) exists, aborting install.');
@@ -53,44 +56,14 @@ class Main
 					}
 					else
 						Sys.println('Local haxelib repository (.haxelib) exists, continuing (--force)');
-				}
 				else
-					new Process('haxelib', ['newrepo']);
-
-				var failedPackages:Array<String> = [];
+					new Process('haxelib', ['newrepo']).exitCode();
 
 				if (quiet)
 					Sys.println('Installing packages ${[for (pkg in hxpkgFile) pkg.name].join(", ")}');
 
-				for (pkg in hxpkgFile)
-				{
-					if (verbose || !quiet)
-						Sys.print('Installing package ${pkg.name}... ');
-					if (pkg.link == null)
-					{
-						var arg = ['install', pkg.name, '--never'];
-						if (pkg.version != null)
-							arg.insert(2, pkg.version);
-						if (!installPackage(arg, 'Check haxelib.'))
-							failedPackages.push(pkg.name);
-					}
-					else
-					{
-						if (pkg.branch != null)
-						{
-							if (!installPackage(['git', pkg.name, pkg.link, pkg.branch, '--never'], 'Check the github repository.'))
-								failedPackages.push(pkg.name);
-						}
-						else
-						{
-							if (!installPackage(['git', pkg.name, pkg.link, '--never'], 'Check the github repository.'))
-								failedPackages.push(pkg.name);
-						}
-					}
-				}
-
+				var failedPackages:Array<String> = installPKGs([for (pkg in hxpkgFile) {config: pkg.link == null ? 0 : 1, info: pkg}]);
 				Sys.println('Installed all packages successfully${failedPackages.length == 0 ? '.' : ' except ' + [for (pkg in failedPackages) pkg].join(", ")}');
-
 			case 'add':
 				var hxpkgFile:HxPKGFile;
 				if (!FileSystem.exists('.hxpkg'))
@@ -102,9 +75,25 @@ class Main
 					hxpkgFile = Json.parse(File.getContent('.hxpkg'));
 
 				args.shift();
-				var urlRegex:EReg = new EReg("^(https?):\\/\\/[^\\s/$.?#].[^\\s]*$", "i");
-				// theres probably a better way to do this
+
+				if (args.length < 1)
+				{
+					Sys.println('Not enough arguments. Run `hxpkg help`');
+					return;
+				}
+
+				var map:Map<String, Int> = [for (i in 0...hxpkgFile.length) hxpkgFile[i].name => i];
+
 				for (pkg in [for (arg in args.join(" ").split(",")) arg.trim().split(" ")])
+				{
+					if (map.exists(pkg[0]))
+					{
+						Sys.println('Package ${pkg[0]} already exists in the `.hxpkg` file. Continuing...');
+						continue;
+					}
+					if (pkg[0] == '--beautify')
+						continue;
+
 					if (pkg.length == 3)
 						hxpkgFile.push({
 							name: pkg[0],
@@ -114,33 +103,88 @@ class Main
 						});
 					else
 					{
-						if (urlRegex.match(pkg[1] ?? ''))
-							hxpkgFile.push({
-								name: pkg[0],
-								version: null,
-								link: pkg[1],
-								branch: null
-							});
-						else
-							hxpkgFile.push({
-								name: pkg[0],
-								version: pkg[1],
-								link: null,
-								branch: null
-							});
+						var matches:Bool = new EReg("^(https?):\\/\\/[^\\s/$.?#].[^\\s]*$", "i").match(pkg[1] ?? '');
+						hxpkgFile.push({
+							name: pkg[0],
+							version: matches ? pkg[1] : null,
+							link: matches ? null : pkg[1],
+							branch: null
+						});
 					}
-				File.saveContent('.hxpkg', Json.stringify(hxpkgFile));
-			case 'remove':
+				}
 
+				File.saveContent('.hxpkg', Json.stringify(hxpkgFile, null, args.contains('--beautify') ? '\t' : null));
+			case 'remove':
+				var hxpkgFile:HxPKGFile;
+				if (!FileSystem.exists('.hxpkg'))
+				{
+					File.write('.hxpkg').close();
+					hxpkgFile = [];
+				}
+				else
+					hxpkgFile = Json.parse(File.getContent('.hxpkg'));
+
+				args.shift();
+
+				if (args.length < 1)
+				{
+					Sys.println('Not enough arguments. Run `hxpkg help`');
+					return;
+				}
+
+				var map:Map<String, Int> = [for (i in 0...hxpkgFile.length) hxpkgFile[i].name => i];
+
+				for (pkg in args)
+				{
+					if (pkg == '--beautify')
+						continue;
+					if (map.exists(pkg))
+						hxpkgFile.remove(hxpkgFile[map.get(pkg)]);
+					else
+						Sys.println('Package $pkg does not exist in the `.hxpkg` file');
+				}
+
+				File.saveContent('.hxpkg', Json.stringify(hxpkgFile, null, args.contains('--beautify') ? '\t' : null));
 			case 'clear':
 		}
 	}
 
-	static function installPackage(arg:Array<String>, failMsg:String):Bool
+	static function installPKGs(pkgs:Array<InstallConfig>):Array<String>
 	{
-		var proc = new Process('haxelib', arg);
-		proc.stdout.readAll(); // For some reason this fixes a freezing issue
-		Sys.print(proc.exitCode() != 0 ? 'failed. $failMsg\n' : (verbose || !quiet) ? 'done.\n' : '');
-		return proc.exitCode() == 0;
+		var failedPackages:Array<String> = [];
+		for (pkg in pkgs)
+		{
+			// There might be a bug involving the add command that adds a blank package called ""
+			if (pkg.info.name.trim() == "")
+				continue;
+
+			if (!quiet)
+				Sys.print('Installing package ${pkg.info.name}... ');
+			var args:Array<String> = [];
+			var failMsg:String = '';
+			switch (pkg.config)
+			{
+				case 0:
+					args.push('install');
+					args.push(pkg.info.name);
+					if (pkg.info.version != null)
+						args.push(pkg.info.version);
+					failMsg = 'Check haxelib.';
+				case 1:
+					args.push('git');
+					args.push(pkg.info.name);
+					args.push(pkg.info.link);
+					if (pkg.info.branch != null)
+						args.push(pkg.info.branch);
+					failMsg = 'Check the github repository.';
+			}
+			var proc = new Process('haxelib', args);
+			proc.stdout.readAll(); // For some reason this fixes a freezing issue
+			var exitCode = proc.exitCode();
+			Sys.print(exitCode != 0 ? 'failed. $failMsg\n' : !quiet ? 'done.\n' : '');
+			if (exitCode != 0)
+				failedPackages.push(pkg.info.name);
+		}
+		return failedPackages;
 	}
 }

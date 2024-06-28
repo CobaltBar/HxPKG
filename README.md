@@ -1,4 +1,4 @@
-# hxpkg
+# HxPKG
 
 Installs packages locally from a `.hxpkg` file
 
@@ -6,7 +6,8 @@ Inspired by [hmm](https://github.com/andywhite37/hmm)
 
 ## Installation
 
-`haxelib --global install hxpkg && haxelib --global run hxpkg setup`
+- `haxelib --global install hxpkg` - Install HxPKG globally
+- `haxelib run hxpkg install` - Install from `.hxpkg`
 
 ## Usage
 
@@ -15,15 +16,17 @@ Inspired by [hmm](https://github.com/andywhite37/hmm)
 ### Commands
 
 - `hxpkg install` - Installs all packages
-- `hxpkg add` - Adds a package (Add multiple by seperating with commas)
-- `hxpkg remove` - Removes a package (Add multiple by seperating with commas)
-- `hxpkg clear` - Removes all packages
+- `hxpkg add` - Adds a package to the `.hxpkg` file (Add multiple by seperating with commas)
+- `hxpkg remove` - Removes a package from the `.hxpkg` file (Add multiple by seperating with commas)
+- `hxpkg clear` - Removes all packages from the `.hxpkg` file
+- `hxpkg uninstall` - Removes all packages installed by the `.hxpkg` file
+- `hxpkg help` - Shows help information
 
 ### Options
 
-- `--quiet' - Silent Installation
-- `--verbose` - Verbose Installation
-- `--force` - Install packages even if a local haxelib repository (.haxelib) exists
+- `--quiet` - (Used with `install`) Silent Installation
+- `--force` - (Used with `install`) Install packages even if a local haxelib repository (.haxelib) exists
+- `--beautify` - (Used with `add` and `remove`) Formats the `.hxpkg` file
 
 ### Credits
 
