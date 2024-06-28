@@ -20,6 +20,7 @@ Inspired by [hmm](https://github.com/andywhite37/hmm)
 - `hxpkg remove` - Removes a package from the `.hxpkg` file (Add multiple by seperating with commas)
 - `hxpkg clear` - Removes all packages from the `.hxpkg` file
 - `hxpkg uninstall` - Removes all packages installed by the `.hxpkg` file
+  - NOTE: Does not remove dependencies
 - `hxpkg help` - Shows help information
 
 ### Options

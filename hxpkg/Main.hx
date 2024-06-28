@@ -63,7 +63,8 @@ class Main
 					Sys.println('Installing packages ${[for (pkg in hxpkgFile) pkg.name].join(", ")}');
 
 				var failedPackages:Array<String> = installPKGs([for (pkg in hxpkgFile) {config: pkg.link == null ? 0 : 1, info: pkg}]);
-				Sys.println('Installed all packages successfully${failedPackages.length == 0 ? '.' : ' except ' + [for (pkg in failedPackages) pkg].join(", ")}');
+				if (failedPackages.length > 0)
+					Sys.println('Failed to install ${[for (pkg in failedPackages) pkg].join(", ")}');
 			case 'add':
 				var hxpkgFile:HxPKGFile;
 				if (!FileSystem.exists('.hxpkg'))
@@ -147,6 +148,25 @@ class Main
 				File.saveContent('.hxpkg', Json.stringify(hxpkgFile, null, args.contains('--beautify') ? '\t' : null));
 			case 'clear':
 				File.saveContent('.hxpkg', Json.stringify('[]', null, args.contains('--beautify') ? '\t' : null));
+			case 'uninstall':
+				if (!FileSystem.exists('.haxelib'))
+				{
+					Sys.println('Local haxelib repository (.haxelib) does not exist, aborting uninstall.');
+					return;
+				}
+
+				if (!FileSystem.exists('.hxpkg'))
+				{
+					Sys.println('.hxpkg does not exist, aborting install.');
+					return;
+				}
+
+				var hxpkgFile:HxPKGFile = Json.parse(File.getContent('.hxpkg'));
+
+				var failedPackages:Array<String> = uninstallPKGs([for (pkg in hxpkgFile) pkg.name]);
+				if (failedPackages.length > 0)
+					Sys.println('Failed to uninstall ${[for (pkg in failedPackages) pkg].join(", ")}');
+			case 'help':
 		}
 	}
 
@@ -185,6 +205,25 @@ class Main
 			Sys.print(exitCode != 0 ? 'failed. $failMsg\n' : !quiet ? 'done.\n' : '');
 			if (exitCode != 0)
 				failedPackages.push(pkg.info.name);
+		}
+		return failedPackages;
+	}
+
+	static function uninstallPKGs(pkgs:Array<String>):Array<String>
+	{
+		var failedPackages:Array<String> = [];
+		for (pkg in pkgs)
+		{
+			if (pkg.trim() == "")
+				continue;
+			if (!quiet)
+				Sys.print('Uninstalling package ${pkg}... ');
+			var proc = new Process('haxelib', ['remove', pkg]);
+			proc.stdout.readAll();
+			var exitCode = proc.exitCode();
+			Sys.print(exitCode != 0 ? 'failed.\n' : !quiet ? 'done.\n' : '');
+			if (exitCode != 0)
+				failedPackages.push(pkg);
 		}
 		return failedPackages;
 	}
