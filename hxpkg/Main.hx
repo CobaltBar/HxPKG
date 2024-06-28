@@ -175,12 +175,13 @@ class Main
 					Sys.println('Failed to uninstall ${[for (pkg in failedPackages) pkg].join(", ")}');
 			case 'help':
 				for (msg in [
-					'hxpkg install - Installs all packages from the `.hxpkg` file',
-					'hxpkg add - Adds a package to the `.hxpkg` file (Add multiple by seperating with commas)\nExamples:\n\thxpkg add tjson\n\thxpkg add hmm 3.1.0\n\thxpkg add haxeui-core https://github.com/haxeui/haxeui-core/\n\thxpkg add flxanimate https://github.com/ShadowMario/flxanimate dev',
-					'hxpkg remove - Removes a package from the `.hxpkg` file',
-					'hxpkg clear - Removes all packages from the `.hxpkg` file',
-					'hxpkg uninstall - Removes all packages installed by the `.hxpkg` file\n\tNOTE: Does not remove dependencies',
-					'hxpkg help - Shows help information'
+					'haxelib run hxpkg install - Installs all packages from the `.hxpkg` file',
+					'haxelib run hxpkg add - Adds a package to the `.hxpkg` file (Add multiple by seperating with commas)\nExamples:\n\thxpkg add tjson\n\thxpkg add hmm 3.1.0\n\thxpkg add haxeui-core https://github.com/haxeui/haxeui-core/\n\thxpkg add flxanimate https://github.com/ShadowMario/flxanimate dev',
+					'haxelib run hxpkg remove - Removes a package from the `.hxpkg` file',
+					'haxelib run hxpkg clear - Removes all packages from the `.hxpkg` file',
+					'haxelib run hxpkg uninstall - Removes all packages installed by the `.hxpkg` file\n\tNOTE: Does not remove dependencies',
+					'haxelib run hxpkg help - Shows help information',
+					'\nSwitches:\n\t--quiet - (Used with install) Silent Installation\n\t--force - (Used with install) Install packages even if a local haxelib repository (.haxelib) exists\n\t--beautify - (Used with add, remove and clear) Formats the `.hxpkg` file'
 				])
 					Sys.println(msg);
 		}

@@ -11,17 +11,17 @@ Inspired by [hmm](https://github.com/andywhite37/hmm)
 
 ## Usage
 
-- `hxpkg [command] [options]`
+- `haxelib run hxpkg [command] [options]`
 
 ### Commands
 
-- `hxpkg install` - Installs all packages from the `.hxpkg` file
-- `hxpkg add` - Adds a package to the `.hxpkg` file (Add multiple by seperating with commas)
-- `hxpkg remove` - Removes a package from the `.hxpkg` file
-- `hxpkg clear` - Removes all packages from the `.hxpkg` file
-- `hxpkg uninstall` - Removes all packages installed by the `.hxpkg` file
+- `haxelib run hxpkg install` - Installs all packages from the `.hxpkg` file
+- `haxelib run hxpkg add` - Adds a package to the `.hxpkg` file (Add multiple by seperating with commas)
+- `haxelib run hxpkg remove` - Removes a package from the `.hxpkg` file
+- `haxelib run hxpkg clear` - Removes all packages from the `.hxpkg` file
+- `haxelib run hxpkg uninstall` - Removes all packages installed by the `.hxpkg` file
   - NOTE: Does not remove dependencies
-- `hxpkg help` - Shows help information
+- `haxelib run hxpkg help` - Shows help information
 
 ### Options
 
