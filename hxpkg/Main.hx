@@ -146,6 +146,7 @@ class Main
 
 				File.saveContent('.hxpkg', Json.stringify(hxpkgFile, null, args.contains('--beautify') ? '\t' : null));
 			case 'clear':
+				File.saveContent('.hxpkg', Json.stringify('[]', null, args.contains('--beautify') ? '\t' : null));
 		}
 	}
 

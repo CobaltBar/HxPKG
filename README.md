@@ -26,7 +26,7 @@ Inspired by [hmm](https://github.com/andywhite37/hmm)
 
 - `--quiet` - (Used with `install`) Silent Installation
 - `--force` - (Used with `install`) Install packages even if a local haxelib repository (.haxelib) exists
-- `--beautify` - (Used with `add` and `remove`) Formats the `.hxpkg` file
+- `--beautify` - (Used with `add`, `remove` and `clear`) Formats the `.hxpkg` file
 
 ### Credits
 
