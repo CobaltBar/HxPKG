@@ -30,7 +30,9 @@ class Main
 	static function main()
 	{
 		var args = Sys.args();
-		args.pop();
+		Sys.setCwd(args.pop());
+
+		trace(FileSystem.absolutePath('.hxpkg'));
 
 		quiet = args.contains('--quiet');
 
