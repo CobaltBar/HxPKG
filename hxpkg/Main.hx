@@ -94,8 +94,14 @@ class Main
 					}
 					if (pkg[0] == '--beautify')
 						continue;
+					if (pkg[1] == '--beautify')
+						pkg.remove(pkg[1]);
+					if (pkg[2] == '--beautify')
+						pkg.remove(pkg[2]);
+					if (pkg[3] == '--beautify')
+						pkg.remove(pkg[3]);
 
-					if (pkg.length == 3)
+					if (pkg.length >= 3)
 						hxpkgFile.push({
 							name: pkg[0],
 							version: null,
@@ -107,8 +113,8 @@ class Main
 						var matches:Bool = new EReg("^(https?):\\/\\/[^\\s/$.?#].[^\\s]*$", "i").match(pkg[1] ?? '');
 						hxpkgFile.push({
 							name: pkg[0],
-							version: matches ? pkg[1] : null,
-							link: matches ? null : pkg[1],
+							version: matches ? null : pkg[1],
+							link: matches ? pkg[1] : null,
 							branch: null
 						});
 					}
@@ -147,7 +153,8 @@ class Main
 
 				File.saveContent('.hxpkg', Json.stringify(hxpkgFile, null, args.contains('--beautify') ? '\t' : null));
 			case 'clear':
-				File.saveContent('.hxpkg', Json.stringify('[]', null, args.contains('--beautify') ? '\t' : null));
+				File.saveContent('.hxpkg', '[]');
+				Sys.println('Cleared all packages from the `.hxpkg` file');
 			case 'uninstall':
 				if (!FileSystem.exists('.haxelib'))
 				{
@@ -167,6 +174,15 @@ class Main
 				if (failedPackages.length > 0)
 					Sys.println('Failed to uninstall ${[for (pkg in failedPackages) pkg].join(", ")}');
 			case 'help':
+				for (msg in [
+					'hxpkg install - Installs all packages from the `.hxpkg` file',
+					'hxpkg add - Adds a package to the `.hxpkg` file (Add multiple by seperating with commas)\nExamples:\n\thxpkg add tjson\n\thxpkg add hmm 3.1.0\n\thxpkg add haxeui-core https://github.com/haxeui/haxeui-core/\n\thxpkg add flxanimate https://github.com/ShadowMario/flxanimate dev',
+					'hxpkg remove - Removes a package from the `.hxpkg` file',
+					'hxpkg clear - Removes all packages from the `.hxpkg` file',
+					'hxpkg uninstall - Removes all packages installed by the `.hxpkg` file\n\tNOTE: Does not remove dependencies',
+					'hxpkg help - Shows help information'
+				])
+					Sys.println(msg);
 		}
 	}
 

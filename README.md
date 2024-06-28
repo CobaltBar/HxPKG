@@ -15,9 +15,9 @@ Inspired by [hmm](https://github.com/andywhite37/hmm)
 
 ### Commands
 
-- `hxpkg install` - Installs all packages
+- `hxpkg install` - Installs all packages from the `.hxpkg` file
 - `hxpkg add` - Adds a package to the `.hxpkg` file (Add multiple by seperating with commas)
-- `hxpkg remove` - Removes a package from the `.hxpkg` file (Add multiple by seperating with commas)
+- `hxpkg remove` - Removes a package from the `.hxpkg` file
 - `hxpkg clear` - Removes all packages from the `.hxpkg` file
 - `hxpkg uninstall` - Removes all packages installed by the `.hxpkg` file
   - NOTE: Does not remove dependencies
