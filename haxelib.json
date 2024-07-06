@@ -8,7 +8,7 @@
 		"installation"
 	],
 	"description": "Local haxelib package installer",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"classPath": "hxpkg",
 	"releasenote": "Bugfixes: remove trace, fixed --beautify check, added additional messages, fixed help examples, added invalid command message, and added --never to haxelib args",
 	"contributors": [
