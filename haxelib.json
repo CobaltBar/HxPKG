@@ -10,7 +10,7 @@
 	"description": "Local haxelib package installer",
 	"version": "1.0.1",
 	"classPath": "hxpkg",
-	"releasenote": "Set CWD Correctly",
+	"releasenote": "Bugfixes: remove trace, fixed --beautify check, added additional messages, fixed help examples, added invalid command message, and added --never to haxelib args",
 	"contributors": [
 		"CobaltBar"
 	],

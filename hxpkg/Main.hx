@@ -32,8 +32,6 @@ class Main
 		var args = Sys.args();
 		Sys.setCwd(args.pop());
 
-		trace(FileSystem.absolutePath('.hxpkg'));
-
 		quiet = args.contains('--quiet');
 
 		if (!quiet)
@@ -89,19 +87,15 @@ class Main
 
 				for (pkg in [for (arg in args.join(" ").split(",")) arg.trim().split(" ")])
 				{
+					for (p in pkg)
+						if (p == '--beautify')
+							pkg.remove(p);
+
 					if (map.exists(pkg[0]))
 					{
 						Sys.println('Package ${pkg[0]} already exists in the `.hxpkg` file. Continuing...');
 						continue;
 					}
-					if (pkg[0] == '--beautify')
-						continue;
-					if (pkg[1] == '--beautify')
-						pkg.remove(pkg[1]);
-					if (pkg[2] == '--beautify')
-						pkg.remove(pkg[2]);
-					if (pkg[3] == '--beautify')
-						pkg.remove(pkg[3]);
 
 					if (pkg.length >= 3)
 						hxpkgFile.push({
@@ -120,6 +114,7 @@ class Main
 							branch: null
 						});
 					}
+					Sys.println('Added package ${pkg[0]} to `.hxpkg`');
 				}
 
 				File.saveContent('.hxpkg', Json.stringify(hxpkgFile, null, args.contains('--beautify') ? '\t' : null));
@@ -148,7 +143,10 @@ class Main
 					if (pkg == '--beautify')
 						continue;
 					if (map.exists(pkg))
+					{
+						Sys.println('Removing package ${pkg}');
 						hxpkgFile.remove(hxpkgFile[map.get(pkg)]);
+					}
 					else
 						Sys.println('Package $pkg does not exist in the `.hxpkg` file');
 				}
@@ -178,7 +176,7 @@ class Main
 			case 'help':
 				for (msg in [
 					'haxelib run hxpkg install - Installs all packages from the `.hxpkg` file',
-					'haxelib run hxpkg add - Adds a package to the `.hxpkg` file (Add multiple by seperating with commas)\nExamples:\n\thxpkg add tjson\n\thxpkg add hmm 3.1.0\n\thxpkg add haxeui-core https://github.com/haxeui/haxeui-core/\n\thxpkg add flxanimate https://github.com/ShadowMario/flxanimate dev',
+					'haxelib run hxpkg add - Adds a package to the `.hxpkg` file (Add multiple by seperating with commas)\nExamples:\n\thaxelib run hxpkg add tjson\n\thaxelib run hxpkg add hmm 3.1.0\n\thaxelib run hxpkg add haxeui-core https://github.com/haxeui/haxeui-core/\n\thaxelib run hxpkg add flxanimate https://github.com/ShadowMario/flxanimate dev',
 					'haxelib run hxpkg remove - Removes a package from the `.hxpkg` file',
 					'haxelib run hxpkg clear - Removes all packages from the `.hxpkg` file',
 					'haxelib run hxpkg uninstall - Removes all packages installed by the `.hxpkg` file\n\tNOTE: Does not remove dependencies',
@@ -186,6 +184,8 @@ class Main
 					'\nSwitches:\n\t--quiet - (Used with install) Silent Installation\n\t--force - (Used with install) Install packages even if a local haxelib repository (.haxelib) exists\n\t--beautify - (Used with add, remove and clear) Formats the `.hxpkg` file'
 				])
 					Sys.println(msg);
+			default:
+				Sys.println('Invalid command. Run `haxelib run hxpkg help` for help.');
 		}
 	}
 
@@ -218,6 +218,7 @@ class Main
 						args.push(pkg.info.branch);
 					failMsg = 'Check the github repository.';
 			}
+			args.push('--never');
 			var proc = new Process('haxelib', args);
 			proc.stdout.readAll(); // For some reason this fixes a freezing issue
 			var exitCode = proc.exitCode();
@@ -237,7 +238,7 @@ class Main
 				continue;
 			if (!quiet)
 				Sys.print('Uninstalling package ${pkg}... ');
-			var proc = new Process('haxelib', ['remove', pkg]);
+			var proc = new Process('haxelib', ['remove', pkg, '--never']);
 			proc.stdout.readAll();
 			var exitCode = proc.exitCode();
 			Sys.print(exitCode != 0 ? 'failed.\n' : !quiet ? 'done.\n' : '');
