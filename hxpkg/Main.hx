@@ -67,24 +67,6 @@ class Main
 
 		/*switch (args[0])
 			{
-				case 'uninstall':
-					if (!FileSystem.exists('.haxelib'))
-					{
-						Sys.println('Local haxelib repository (.haxelib) does not exist, aborting uninstall.');
-						return;
-					}
-
-					if (!FileSystem.exists('.hxpkg'))
-					{
-						Sys.println('.hxpkg does not exist, aborting install.');
-						return;
-					}
-
-					var hxpkgFile:HxPKGFile = Json.parse(File.getContent('.hxpkg'));
-
-					var failedPackages:Array<String> = uninstallPKGs([for (pkg in hxpkgFile) pkg.name]);
-					if (failedPackages.length > 0)
-						Sys.println('Failed to uninstall ${[for (pkg in failedPackages) pkg].join(", ")}');
 				case 'help':
 					for (msg in [
 						'haxelib run hxpkg install - Installs all packages from the .hxpkg file',
@@ -101,64 +83,6 @@ class Main
 		}*/
 	}
 
-	/*static function installPKGs(pkgs:Array<InstallConfig>):Array<String>
-		{
-			var failedPackages:Array<String> = [];
-			for (pkg in pkgs)
-			{
-				// There might be a bug involving the add command that adds a blank package called ""
-				if (pkg.info.name.trim() == "")
-					continue;
-
-				if (!quiet)
-					Sys.print('Installing package ${pkg.info.name}... ');
-				var args:Array<String> = [];
-				var failMsg:String = '';
-				switch (pkg.config)
-				{
-					case 0:
-						args.push('install');
-						args.push(pkg.info.name);
-						if (pkg.info.version != null)
-							args.push(pkg.info.version);
-						failMsg = 'Check haxelib.';
-					case 1:
-						args.push('git');
-						args.push(pkg.info.name);
-						args.push(pkg.info.link);
-						if (pkg.info.branch != null)
-							args.push(pkg.info.branch);
-						failMsg = 'Check the github repository.';
-				}
-				args.push('--never');
-				var proc = new Process('haxelib', args);
-				proc.stdout.readAll(); // For some reason this fixes a freezing issue
-				var exitCode = proc.exitCode();
-				Sys.print(exitCode != 0 ? 'failed. $failMsg\n' : !quiet ? 'done.\n' : '');
-				if (exitCode != 0)
-					failedPackages.push(pkg.info.name);
-			}
-			return failedPackages;
-		}
-
-		static function uninstallPKGs(pkgs:Array<String>):Array<String>
-		{
-			var failedPackages:Array<String> = [];
-			for (pkg in pkgs)
-			{
-				if (pkg.trim() == "")
-					continue;
-				if (!quiet)
-					Sys.print('Uninstalling package ${pkg}... ');
-				var proc = new Process('haxelib', ['remove', pkg, '--never']);
-				proc.stdout.readAll();
-				var exitCode = proc.exitCode();
-				Sys.print(exitCode != 0 ? 'failed.\n' : !quiet ? 'done.\n' : '');
-				if (exitCode != 0)
-					failedPackages.push(pkg);
-			}
-			return failedPackages;
-	}*/
 	static function install(args:Array<String>, flags:Array<String>):Void
 	{
 		if (!HxPKG())
@@ -192,35 +116,35 @@ class Main
 			if (!flags.contains('--quiet'))
 				Sys.print('Installing package ${pkg.name}... ');
 
-			var args:Array<String> = [];
+			var hxargs:Array<String> = [];
 			var failMsg = '';
 			if (pkg.link == null)
 			{
-				args.push('install');
-				args.push(pkg.name);
+				hxargs.push('install');
+				hxargs.push(pkg.name);
 				if (pkg.version != null)
-					args.push(pkg.version);
+					hxargs.push(pkg.version);
 				failMsg = 'Check haxelib.';
 			}
 			else
 			{
-				args.push('git');
-				args.push(pkg.name);
-				args.push(pkg.link);
+				hxargs.push('git');
+				hxargs.push(pkg.name);
+				hxargs.push(pkg.link);
 				if (pkg.branch != null)
-					args.push(pkg.branch);
+					hxargs.push(pkg.branch);
 				failMsg = 'Check the github repository.';
 			}
 
-			args.push('--never');
-			var exitCode = new Process('haxelib', args).exitCode();
+			hxargs.push('--never');
+			var exitCode = new Process('haxelib', hxargs).exitCode();
 			if (exitCode != 0)
 			{
 				Sys.println('failed. $failMsg');
 				failedPackages.push(pkg.name);
 			}
 			else
-				Sys.println('done');
+				Sys.println('done.');
 		}
 
 		if (failedPackages.length > 0)
@@ -284,7 +208,7 @@ class Main
 						});
 				}
 			}
-			Sys.println('Added package ${pkg[0]} to .hxpkg');
+			Sys.println('Added package ${pkg[0]} to .hxpkg.');
 		}
 
 		if (flags.contains('--beautify'))
@@ -312,7 +236,7 @@ class Main
 				hxpkgFile.remove(hxpkgFile[map[pkg]]);
 			}
 			else
-				Sys.println('Package $pkg does not exist in the .hxpkg');
+				Sys.println('Package $pkg does not exist in the .hxpkg.');
 
 		if (flags.contains('--beautify'))
 			File.saveContent('.hxpkg', Json.stringify(hxpkgFile, null, '\t'));
@@ -323,10 +247,48 @@ class Main
 	static function clear(args:Array<String>, flags:Array<String>):Void
 	{
 		File.saveContent('.hxpkg', '[]');
-		Sys.println('Cleared all packages from the .hxpkg file');
+		Sys.println('Cleared all packages from the .hxpkg file.');
 	}
 
-	static function uninstall(args:Array<String>, flags:Array<String>):Void {}
+	static function uninstall(args:Array<String>, flags:Array<String>):Void
+	{
+		if (!Haxelib())
+		{
+			Sys.println('.haxelib does not exist, aborting.');
+			return;
+		}
+
+		if (!HxPKG())
+		{
+			Sys.println('.hxpkg does not exist, aborting.');
+			return;
+		}
+
+		var content = File.getContent('.hxpkg').trim();
+		if (content == '')
+			content = '[]';
+		var hxpkgFile:HxPKGFile = Json.parse(content);
+
+		var failedPackages:Array<String> = [];
+		for (pkg in hxpkgFile)
+		{
+			if (!flags.contains('--quiet'))
+				Sys.print('Uninstalling package ${pkg.name}... ');
+			var exitCode = new Process('haxelib', ['remove', pkg.name, '--never']).exitCode();
+			if (exitCode != 0)
+			{
+				Sys.println('failed.');
+				failedPackages.push(pkg.name);
+			}
+			else
+				Sys.println('done.');
+		}
+
+		if (failedPackages.length > 0)
+			Sys.println('Failed to uninstall ${[for (pkg in failedPackages) pkg].join(", ")}.');
+		else
+			Sys.println('Uninstalled all packages successfully.');
+	}
 
 	static function help(args:Array<String>, flags:Array<String>):Void {}
 
