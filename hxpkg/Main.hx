@@ -68,24 +68,8 @@ class Main
 		/*switch (args[0])
 			{
 				case 'add':
-					var hxpkgFile:HxPKGFile;
-					if (!FileSystem.exists('.hxpkg'))
-					{
-						File.write('.hxpkg').close();
-						hxpkgFile = [];
-					}
-					else
-						hxpkgFile = Json.parse(File.getContent('.hxpkg'));
 
-					args.shift();
-
-					if (args.length < 1)
-					{
-						Sys.println('Not enough arguments. Run `hxpkg help`');
-						return;
-					}
-
-					var map:Map<String, Int> = [for (i in 0...hxpkgFile.length) hxpkgFile[i].name => i];
+					
 
 					for (pkg in [for (arg in args.join(" ").split(",")) arg.trim().split(" ")])
 					{
@@ -95,7 +79,7 @@ class Main
 
 						if (map.exists(pkg[0]))
 						{
-							Sys.println('Package ${pkg[0]} already exists in the `.hxpkg` file. Continuing...');
+							Sys.println('Package ${pkg[0]} already exists in the .hxpkg file. Continuing...');
 							continue;
 						}
 
@@ -116,7 +100,7 @@ class Main
 								branch: null
 							});
 						}
-						Sys.println('Added package ${pkg[0]} to `.hxpkg`');
+						Sys.println('Added package ${pkg[0]} to .hxpkg');
 					}
 
 					File.saveContent('.hxpkg', Json.stringify(hxpkgFile, null, args.contains('--beautify') ? '\t' : null));
@@ -150,13 +134,13 @@ class Main
 							hxpkgFile.remove(hxpkgFile[map.get(pkg)]);
 						}
 						else
-							Sys.println('Package $pkg does not exist in the `.hxpkg` file');
+							Sys.println('Package $pkg does not exist in the .hxpkg file');
 					}
 
 					File.saveContent('.hxpkg', Json.stringify(hxpkgFile, null, args.contains('--beautify') ? '\t' : null));
 				case 'clear':
 					File.saveContent('.hxpkg', '[]');
-					Sys.println('Cleared all packages from the `.hxpkg` file');
+					Sys.println('Cleared all packages from the .hxpkg file');
 				case 'uninstall':
 					if (!FileSystem.exists('.haxelib'))
 					{
@@ -177,13 +161,13 @@ class Main
 						Sys.println('Failed to uninstall ${[for (pkg in failedPackages) pkg].join(", ")}');
 				case 'help':
 					for (msg in [
-						'haxelib run hxpkg install - Installs all packages from the `.hxpkg` file',
-						'haxelib run hxpkg add - Adds a package to the `.hxpkg` file (Add multiple by seperating with commas)\nExamples:\n\thaxelib run hxpkg add tjson\n\thaxelib run hxpkg add hmm 3.1.0\n\thaxelib run hxpkg add haxeui-core https://github.com/haxeui/haxeui-core/\n\thaxelib run hxpkg add flxanimate https://github.com/ShadowMario/flxanimate dev',
-						'haxelib run hxpkg remove - Removes a package from the `.hxpkg` file',
-						'haxelib run hxpkg clear - Removes all packages from the `.hxpkg` file',
-						'haxelib run hxpkg uninstall - Removes all packages installed by the `.hxpkg` file\n\tNOTE: Does not remove dependencies',
+						'haxelib run hxpkg install - Installs all packages from the .hxpkg file',
+						'haxelib run hxpkg add - Adds a package to the .hxpkg file (Add multiple by seperating with commas)\nExamples:\n\thaxelib run hxpkg add tjson\n\thaxelib run hxpkg add hmm 3.1.0\n\thaxelib run hxpkg add haxeui-core https://github.com/haxeui/haxeui-core/\n\thaxelib run hxpkg add flxanimate https://github.com/ShadowMario/flxanimate dev',
+						'haxelib run hxpkg remove - Removes a package from the .hxpkg file',
+						'haxelib run hxpkg clear - Removes all packages from the .hxpkg file',
+						'haxelib run hxpkg uninstall - Removes all packages installed by the .hxpkg file\n\tNOTE: Does not remove dependencies',
 						'haxelib run hxpkg help - Shows help information',
-						'\nSwitches:\n\t--quiet - (Used with install) Silent Installation\n\t--force - (Used with install) Install packages even if a local haxelib repository (.haxelib) exists\n\t--beautify - (Used with add, remove and clear) Formats the `.hxpkg` file'
+						'\nSwitches:\n\t--quiet - (Used with install) Silent Installation\n\t--force - (Used with install) Install packages even if a local haxelib repository (.haxelib) exists\n\t--beautify - (Used with add, remove and clear) Formats the .hxpkg file'
 					])
 						Sys.println(msg);
 				default:
@@ -251,7 +235,7 @@ class Main
 	}*/
 	static function install(args:Array<String>, flags:Array<String>):Void
 	{
-		if (!checkHXPKG())
+		if (!HxPKG())
 		{
 			Sys.println('.hxpkg does not exist, aborting.');
 			return;
@@ -262,7 +246,7 @@ class Main
 			content = '[]';
 		var hxpkgFile:HxPKGFile = Json.parse(content);
 
-		if (checkHaxelib())
+		if (Haxelib())
 			if (!flags.contains('--force'))
 			{
 				Sys.println('.haxelib exists, aborting. (Run with --force to continue anyway)');
@@ -317,7 +301,71 @@ class Main
 			Sys.println('Failed to install ${[for (pkg in failedPackages) pkg].join(', ')}');
 	}
 
-	static function add(args:Array<String>, flags:Array<String>):Void {}
+	static function add(args:Array<String>, flags:Array<String>):Void
+	{
+		if (!HxPKG())
+			File.saveContent('.hxpkg', '[]');
+
+		var content = File.getContent('.hxpkg').trim();
+		if (content == '')
+			content = '[]';
+		var hxpkgFile:HxPKGFile = Json.parse(content);
+
+		var map:Map<String, Int> = [for (i in 0...hxpkgFile.length) hxpkgFile[i].name => i];
+
+		// https://stackoverflow.com/questions/3809401/what-is-a-good-regular-expression-to-match-a-url
+		var matchUrl = new EReg('https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)', 'i');
+
+		for (pkg in [for (arg in args.join(" ").split(",")) arg.trim().split(" ")])
+		{
+			if (map.exists(pkg[0]))
+			{
+				Sys.println('Package ${pkg[0]} already exists in the .hxpkg. Continuing...');
+				continue;
+			}
+
+			if (pkg.length >= 3)
+				hxpkgFile.push({
+					name: pkg[0],
+					version: null,
+					link: pkg[1],
+					branch: pkg[2]
+				});
+			else
+			{
+				if (pkg[1] == null)
+					hxpkgFile.push({
+						name: pkg[0],
+						version: null,
+						link: null,
+						branch: null
+					});
+				else
+				{
+					if (matchUrl.match(pkg[1]))
+						hxpkgFile.push({
+							name: pkg[0],
+							version: null,
+							link: pkg[1],
+							branch: null
+						});
+					else
+						hxpkgFile.push({
+							name: pkg[0],
+							version: pkg[1],
+							link: null,
+							branch: null
+						});
+				}
+			}
+			Sys.println('Added package ${pkg[0]} to .hxpkg');
+		}
+
+		if (flags.contains('--beautify'))
+			File.saveContent('.hxpkg', Json.stringify(hxpkgFile, null, '\t'));
+		else
+			File.saveContent('.hxpkg', Json.stringify(hxpkgFile));
+	}
 
 	static function remove(args:Array<String>, flags:Array<String>):Void {}
 
@@ -327,9 +375,9 @@ class Main
 
 	static function help(args:Array<String>, flags:Array<String>):Void {}
 
-	static inline function checkHXPKG():Bool
+	static inline function HxPKG():Bool
 		return FileSystem.exists('.hxpkg');
 
-	static inline function checkHaxelib():Bool
+	static inline function Haxelib():Bool
 		return FileSystem.exists('.haxelib');
 }
