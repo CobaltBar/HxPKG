@@ -7,15 +7,13 @@ import sys.io.Process;
 
 using StringTools;
 
-typedef HxPKGFile = Array<PKGInfo>;
-
-typedef PKGInfo =
-{
-	var name:String;
-	var version:String;
-	var link:String;
-	var branch:String;
-}
+typedef HxPKGFile = Array<
+	{
+		var name:String;
+		var version:String;
+		var link:String;
+		var branch:String;
+	}>;
 
 class Main
 {
