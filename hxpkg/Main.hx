@@ -64,23 +64,6 @@ class Main
 			default:
 				Sys.println('WARN: $cmd is not a valid command. Run `haxelib run hxpkg help` for help');
 		}
-
-		/*switch (args[0])
-			{
-				case 'help':
-					for (msg in [
-						'haxelib run hxpkg install - Installs all packages from the .hxpkg file',
-						'haxelib run hxpkg add - Adds a package to the .hxpkg file (Add multiple by seperating with commas)\nExamples:\n\thaxelib run hxpkg add tjson\n\thaxelib run hxpkg add hmm 3.1.0\n\thaxelib run hxpkg add haxeui-core https://github.com/haxeui/haxeui-core/\n\thaxelib run hxpkg add flxanimate https://github.com/ShadowMario/flxanimate dev',
-						'haxelib run hxpkg remove - Removes a package from the .hxpkg file',
-						'haxelib run hxpkg clear - Removes all packages from the .hxpkg file',
-						'haxelib run hxpkg uninstall - Removes all packages installed by the .hxpkg file\n\tNOTE: Does not remove dependencies',
-						'haxelib run hxpkg help - Shows help information',
-						'\nSwitches:\n\t--quiet - (Used with install) Silent Installation\n\t--force - (Used with install) Install packages even if a local haxelib repository (.haxelib) exists\n\t--beautify - (Used with add, remove and clear) Formats the .hxpkg file'
-					])
-						Sys.println(msg);
-				default:
-					Sys.println('Invalid command. Run `haxelib run hxpkg help` for help.');
-		}*/
 	}
 
 	static function install(args:Array<String>, flags:Array<String>):Void
@@ -290,7 +273,17 @@ class Main
 			Sys.println('Uninstalled all packages successfully.');
 	}
 
-	static function help(args:Array<String>, flags:Array<String>):Void {}
+	static function help(args:Array<String>, flags:Array<String>):Void
+		for (msg in [
+			'haxelib run hxpkg install - Installs all packages from the .hxpkg file',
+			'haxelib run hxpkg add - Adds a package to the .hxpkg file (Add multiple by seperating with commas)\nExamples:\n\thaxelib run hxpkg add tjson\n\thaxelib run hxpkg add hmm 3.1.0\n\thaxelib run hxpkg add haxeui-core https://github.com/haxeui/haxeui-core/\n\thaxelib run hxpkg add flxanimate https://github.com/ShadowMario/flxanimate dev',
+			'haxelib run hxpkg remove - Removes a package from the .hxpkg file',
+			'haxelib run hxpkg clear - Removes all packages from the .hxpkg file',
+			'haxelib run hxpkg uninstall - Removes all packages installed by the .hxpkg file\n\tNOTE: Does not remove dependencies',
+			'haxelib run hxpkg help - Shows help information',
+			'\nSwitches:\n\t--quiet - (Used with install) Silent Installation\n\t--force - (Used with install) Install packages even if a local haxelib repository (.haxelib) exists\n\t--beautify - (Used with add, remove and clear) Formats the .hxpkg file'
+		])
+			Sys.println(msg);
 
 	static inline function HxPKG():Bool
 		return FileSystem.exists('.hxpkg');
