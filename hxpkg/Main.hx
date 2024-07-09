@@ -67,62 +67,8 @@ class Main
 
 		/*switch (args[0])
 			{
-				case 'add':
-
-					
-
-					for (pkg in [for (arg in args.join(" ").split(",")) arg.trim().split(" ")])
-					{
-						for (p in pkg)
-							if (p == '--beautify')
-								pkg.remove(p);
-
-						if (map.exists(pkg[0]))
-						{
-							Sys.println('Package ${pkg[0]} already exists in the .hxpkg file. Continuing...');
-							continue;
-						}
-
-						if (pkg.length >= 3)
-							hxpkgFile.push({
-								name: pkg[0],
-								version: null,
-								link: pkg[1],
-								branch: pkg[2]
-							});
-						else
-						{
-							var matches:Bool = new EReg("^(https?):\\/\\/[^\\s/$.?#].[^\\s]*$", "i").match(pkg[1] ?? '');
-							hxpkgFile.push({
-								name: pkg[0],
-								version: matches ? null : pkg[1],
-								link: matches ? pkg[1] : null,
-								branch: null
-							});
-						}
-						Sys.println('Added package ${pkg[0]} to .hxpkg');
-					}
-
-					File.saveContent('.hxpkg', Json.stringify(hxpkgFile, null, args.contains('--beautify') ? '\t' : null));
 				case 'remove':
-					var hxpkgFile:HxPKGFile;
-					if (!FileSystem.exists('.hxpkg'))
-					{
-						File.write('.hxpkg').close();
-						hxpkgFile = [];
-					}
-					else
-						hxpkgFile = Json.parse(File.getContent('.hxpkg'));
-
-					args.shift();
-
-					if (args.length < 1)
-					{
-						Sys.println('Not enough arguments. Run `hxpkg help`');
-						return;
-					}
-
-					var map:Map<String, Int> = [for (i in 0...hxpkgFile.length) hxpkgFile[i].name => i];
+					
 
 					for (pkg in args)
 					{
@@ -367,7 +313,32 @@ class Main
 			File.saveContent('.hxpkg', Json.stringify(hxpkgFile));
 	}
 
-	static function remove(args:Array<String>, flags:Array<String>):Void {}
+	static function remove(args:Array<String>, flags:Array<String>):Void
+	{
+		if (!HxPKG())
+			File.saveContent('.hxpkg', '[]');
+
+		var content = File.getContent('.hxpkg').trim();
+		if (content == '')
+			content = '[]';
+		var hxpkgFile:HxPKGFile = Json.parse(content);
+
+		var map:Map<String, Int> = [for (i in 0...hxpkgFile.length) hxpkgFile[i].name => i];
+
+		for (pkg in args)
+			if (map.exists(pkg))
+			{
+				Sys.println('Removing package ${pkg}');
+				hxpkgFile.remove(hxpkgFile[map[pkg]]);
+			}
+			else
+				Sys.println('Package $pkg does not exist in the .hxpkg');
+
+		if (flags.contains('--beautify'))
+			File.saveContent('.hxpkg', Json.stringify(hxpkgFile, null, '\t'));
+		else
+			File.saveContent('.hxpkg', Json.stringify(hxpkgFile));
+	}
 
 	static function clear(args:Array<String>, flags:Array<String>):Void {}
 

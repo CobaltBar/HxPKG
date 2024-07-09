@@ -8,9 +8,9 @@
 		"installation"
 	],
 	"description": "Local haxelib package installer",
-	"version": "1.0.2",
+	"version": "1.1.0",
 	"classPath": "hxpkg",
-	"releasenote": "Bugfixes: remove trace, fixed --beautify check, added additional messages, fixed help examples, added invalid command message, and added --never to haxelib args",
+	"releasenote": "Huge refactor, and added Haxe 4.2.5 Compatibility",
 	"contributors": [
 		"CobaltBar"
 	],
