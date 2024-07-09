@@ -67,26 +67,6 @@ class Main
 
 		/*switch (args[0])
 			{
-				case 'remove':
-					
-
-					for (pkg in args)
-					{
-						if (pkg == '--beautify')
-							continue;
-						if (map.exists(pkg))
-						{
-							Sys.println('Removing package ${pkg}');
-							hxpkgFile.remove(hxpkgFile[map.get(pkg)]);
-						}
-						else
-							Sys.println('Package $pkg does not exist in the .hxpkg file');
-					}
-
-					File.saveContent('.hxpkg', Json.stringify(hxpkgFile, null, args.contains('--beautify') ? '\t' : null));
-				case 'clear':
-					File.saveContent('.hxpkg', '[]');
-					Sys.println('Cleared all packages from the .hxpkg file');
 				case 'uninstall':
 					if (!FileSystem.exists('.haxelib'))
 					{
@@ -340,7 +320,11 @@ class Main
 			File.saveContent('.hxpkg', Json.stringify(hxpkgFile));
 	}
 
-	static function clear(args:Array<String>, flags:Array<String>):Void {}
+	static function clear(args:Array<String>, flags:Array<String>):Void
+	{
+		File.saveContent('.hxpkg', '[]');
+		Sys.println('Cleared all packages from the .hxpkg file');
+	}
 
 	static function uninstall(args:Array<String>, flags:Array<String>):Void {}
 
