@@ -8,9 +8,9 @@
 		"installation"
 	],
 	"description": "Local haxelib package installer",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"classPath": "hxpkg",
-	"releasenote": "Huge refactor, and added Haxe 4.2.5 Compatibility",
+	"releasenote": "--no-color option",
 	"contributors": [
 		"CobaltBar"
 	],
