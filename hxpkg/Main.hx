@@ -89,7 +89,11 @@ class Main
 			else
 				Sys.println('.haxelib exists, continuing (--force)');
 		else
-			new Process('haxelib', ['newrepo']).exitCode();
+		{
+			var proc = new Process('haxelib', ['newrepo']);
+			proc.stdout.readAll();
+			proc.exitCode();
+		}
 
 		if (flags.contains('--quiet'))
 			Sys.print('Installing package${if (hxpkgFile.length > 1) 's' else ''} ${[for (pkg in hxpkgFile) pkg.name].join(', ')}... ');
@@ -121,7 +125,9 @@ class Main
 			}
 
 			hxargs.push('--never');
-			var exitCode = new Process('haxelib', hxargs).exitCode();
+			var proc = new Process('haxelib', hxargs);
+			proc.stdout.readAll(); // WHY DOES THIS FIX IT??
+			var exitCode = proc.exitCode();
 			if (exitCode != 0)
 			{
 				Sys.println('failed. $failMsg');
@@ -258,7 +264,9 @@ class Main
 		{
 			if (!flags.contains('--quiet'))
 				Sys.print('Uninstalling package ${pkg.name}... ');
-			var exitCode = new Process('haxelib', ['remove', pkg.name, '--never']).exitCode();
+			var proc = new Process('haxelib', ['remove', pkg.name, '--never']);
+			proc.stdout.readAll(); // WHY DOES THIS FIX IT??
+			var exitCode = proc.exitCode();
 			if (exitCode != 0)
 			{
 				Sys.println('failed.');
