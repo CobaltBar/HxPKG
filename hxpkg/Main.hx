@@ -130,9 +130,7 @@ class Main
 				failMsg = 'Check the github repository.';
 			}
 
-			hxargs.push('--never');
-			hxargs.push('--quiet');
-			var proc = new Process('haxelib', hxargs);
+			var proc = new Process('haxelib', hxargs.concat(['--never', '--skip-dependencies', '--quiet']));
 			proc.stdout.readAll(); // WHY DOES THIS FIX IT??
 			var exitCode = proc.exitCode();
 			if (exitCode != 0)
