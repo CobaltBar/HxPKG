@@ -7,14 +7,16 @@ import sys.io.Process;
 
 using StringTools;
 
-typedef HxPKGFile = Array<
-	{
-		@:optional var name:String;
-		@:optional var version:String;
-		@:optional var link:String;
-		@:optional var branch:String;
-		@:optional var hash:String;
-	}>;
+typedef HxPKGFile = Array<PKG>;
+
+typedef PKG =
+{
+	@:optional var name:String;
+	@:optional var version:String;
+	@:optional var link:String;
+	@:optional var branch:String;
+	@:optional var hash:String;
+}
 
 class Main
 {
@@ -237,13 +239,13 @@ class Main
 			content = '[]';
 		var hxpkgFile:HxPKGFile = Json.parse(content);
 
-		var map:Map<String, Int> = [for (i in 0...hxpkgFile.length) hxpkgFile[i].name => i];
+		var map:Map<String, PKG> = [for (pkg in hxpkgFile) pkg.name => pkg];
 
 		for (pkg in args)
 			if (map.exists(pkg))
 			{
 				Sys.println('Removing package ${pkg}');
-				hxpkgFile.remove(hxpkgFile[map[pkg]]);
+				hxpkgFile.remove(map[pkg]);
 			}
 			else
 				Sys.println('Package $pkg does not exist in the .hxpkg.');
