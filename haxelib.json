@@ -8,9 +8,9 @@
 		"installation"
 	],
 	"description": "Local haxelib package installer",
-	"version": "1.2.2",
+	"version": "1.2.3",
 	"classPath": "hxpkg",
-	"releasenote": "Fixed remove command",
+	"releasenote": "Added --global flag",
 	"contributors": [
 		"CobaltBar"
 	],

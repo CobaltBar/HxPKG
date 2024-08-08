@@ -33,7 +33,7 @@ class Main
 
 		var args:Array<String> = [];
 		var flags:Array<String> = [];
-		final supportedFlags = ['--quiet', '--force', '--beautify', '--no-color', '--remove-all'];
+		final supportedFlags = ['--quiet', '--force', '--beautify', '--no-color', '--remove-all', '--global'];
 		for (arg in oldArgs)
 			if (arg.trim().startsWith('--'))
 			{
@@ -83,23 +83,24 @@ class Main
 			content = '[]';
 		var hxpkgFile:HxPKGFile = Json.parse(content);
 
-		if (Haxelib())
-			if (!flags.contains('--force'))
-			{
-				Sys.println('.haxelib exists, aborting. (Run with --force to continue anyway)');
-				return;
-			}
+		if (!flags.contains('--global'))
+			if (Haxelib())
+				if (!flags.contains('--force'))
+				{
+					Sys.println('.haxelib exists, aborting. (Run with --force to continue anyway)');
+					return;
+				}
+				else
+				{
+					if (!flags.contains('--quiet'))
+						Sys.println('.haxelib exists, continuing (--force)');
+				}
 			else
 			{
-				if (!flags.contains('--quiet'))
-					Sys.println('.haxelib exists, continuing (--force)');
+				var proc = new Process('haxelib', ['newrepo', '--quiet']);
+				proc.stdout.readAll();
+				proc.exitCode();
 			}
-		else
-		{
-			var proc = new Process('haxelib', ['newrepo', '--quiet']);
-			proc.stdout.readAll();
-			proc.exitCode();
-		}
 
 		if (flags.contains('--quiet'))
 			Sys.print('Installing package${if (hxpkgFile.length > 1) 's' else ''} ${[for (pkg in hxpkgFile) pkg.name].join(', ')}... ');
@@ -134,8 +135,8 @@ class Main
 
 			var proc = new Process('haxelib', hxargs.concat(['--never', '--skip-dependencies', '--quiet']));
 			proc.stdout.readAll(); // WHY DOES THIS FIX IT??
-			var exitCode = proc.exitCode();
-			if (exitCode != 0)
+
+			if (proc.exitCode() != 0)
 			{
 				if (!flags.contains('--quiet'))
 					Sys.println('failed. $failMsg');
