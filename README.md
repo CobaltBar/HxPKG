@@ -22,14 +22,23 @@ Inspired by [hmm](https://github.com/andywhite37/hmm)
 - `haxelib run hxpkg clear` - Removes all packages from the `.hxpkg` file
 - `haxelib run hxpkg uninstall` - Removes all packages installed by the `.hxpkg` file
   - NOTE: Does not remove dependencies
+- `haxelib run hxpkg list` - Lists all packages in the `.hxpkg` file
 - `haxelib run hxpkg help` - Shows help information
 
 ### Options
 
-- `--quiet` - (Used with `install`) Silent Installation
-- `--force` - (Used with `install`) Install packages even if a local haxelib repository (.haxelib) exists
-- `--beautify` - (Used with `add`, `remove` and `clear`) Formats the `.hxpkg` file
-- `--remove-all` - (Used with `uninstall`) Removes the whole repo (`haxelib deleterepo`) instead of the packages specified in the `.hxpkg`
+- `--no-color`: Disables Color Printing
+- `--quiet`: Silent Install/Uninstall
+
+- `install`:
+  - `--global`: Installs packages globally
+  - `--quiet`: Silent Install
+  - `--force`: Installs even if `.haxelib` exists
+- `add`, `remove`:
+  - `--beautify`: Formats the `.hxpkg` file
+- `uninstall`:
+  - `--remove-all`: Removes the local repo
+  - `--quiet`: Silent Uninstall
 
 ### Credits
 
