@@ -8,9 +8,9 @@
 		"installation"
 	],
 	"description": "Local haxelib package installer",
-	"version": "1.3.0",
+	"version": "1.3.1",
 	"classPath": "hxpkg",
-	"releasenote": "General improvements, list command, help cleanup",
+	"releasenote": "List command print fix",
 	"contributors": [
 		"CobaltBar"
 	],

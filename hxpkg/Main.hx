@@ -390,7 +390,7 @@ uninstall:
 				if (pkg.hash != null)
 					msg += ' - ${pkg.hash}';
 				else if (pkg.branch != null)
-					msg += ' - ${pkg.link} - ${pkg.branch}';
+					msg += ' - ${pkg.branch}';
 			}
 			Sys.println(msg);
 		}
