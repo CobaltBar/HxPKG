@@ -179,6 +179,9 @@ uninstall:
 				failMsg = 'Check the github repository.';
 			}
 
+			if (global)
+				hxargs.unshift('--global');
+
 			var proc = new Process('haxelib', hxargs.concat(['--never', '--skip-dependencies', '--quiet']));
 			proc.stdout.readAll(); // WHY DOES THIS FIX IT??
 
