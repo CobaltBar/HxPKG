@@ -1,77 +1,47 @@
 package hxpkg;
 
-import haxe.Json;
-import sys.FileSystem;
+import haxe.ds.ArraySort;
+import haxe.io.Path;
+import hxpkg.PKGFile;
 import sys.io.File;
 import sys.io.Process;
 
 using StringTools;
 
-typedef HxPKGFile = Array<PKG>;
-
-typedef PKG =
-{
-	var name:String;
-	@:optional var version:String;
-	@:optional var link:String;
-	@:optional var branch:String;
-	@:optional var hash:String;
-}
-
 class Main
 {
 	static final validFlags:Map<String, Array<String>> = [
-		'install' => ['--global', '--quiet', '--force'],
+		'install' => ['--global', '--force'],
 		'add' => ['--beautify'],
 		'remove' => ['--beautify'],
-		'uninstall' => ['--remove-all', '--quiet'],
+		'uninstall' => ['--remove-all'],
 	];
+
+	// https://stackoverflow.com/questions/3809401/what-is-a-good-regular-expression-to-match-a-url
+	static final urlMatch = new EReg('https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)', 'i');
+
+	public static var quiet:Bool = false;
 
 	static function main()
 	{
-		var oldArgs = Sys.args();
-		Sys.setCwd(oldArgs.pop());
+		var parsed = Util.parseArgs();
 
-		if (!oldArgs.contains('--quiet'))
-			if (oldArgs.contains('--no-color'))
-				Sys.println(" _   _        ____   _  __ ____ \n| | | |__  __|  _ \\ | |/ // ___|\n| |_| |\\ \\/ /| |_) || ' /| |  _ \n|  _  | >  < |  __/ | . \\| |_| |\n|_| |_|/_/\\_\\|_|    |_|\\_\\\\____|\n");
-			else
-				Sys.println("\033[38;5;208m _   _       \033[38;5;33m ____  \033[38;5;33m _  __\033[38;5;33m ____ \n\033[38;5;208m| | | |\033[38;5;202m__  __\033[38;5;33m|  _ \\ \033[38;5;33m| |/ /\033[38;5;33m/ ___|\n\033[38;5;208m| |_| |\033[38;5;202m\\ \\/ /\033[38;5;33m| |_) |\033[38;5;33m| ' /\033[38;5;33m| |  _ \n\033[38;5;208m|  _  |\033[38;5;202m >  < \033[38;5;33m|  __/ \033[38;5;33m| . \\\033[38;5;33m| |_| |\n\033[38;5;208m|_| |_|\033[38;5;202m/_/\\_\\\033[38;5;33m|_|    \033[38;5;33m|_|\\_\\\033[38;5;33m\\____|\033[0;0m\n");
+		if (!quiet)
+			Sys.println("\033[38;5;208m _   _       \033[38;5;33m ____  \033[38;5;33m _  __\033[38;5;33m ____ \n\033[38;5;208m| | | |\033[38;5;202m__  __\033[38;5;33m|  _ \\ \033[38;5;33m| |/ /\033[38;5;33m/ ___|\n\033[38;5;208m| |_| |\033[38;5;202m\\ \\/ /\033[38;5;33m| |_) |\033[38;5;33m| ' /\033[38;5;33m| |  _ \n\033[38;5;208m|  _  |\033[38;5;202m >  < \033[38;5;33m|  __/ \033[38;5;33m| . \\\033[38;5;33m| |_| |\n\033[38;5;208m|_| |_|\033[38;5;202m/_/\\_\\\033[38;5;33m|_|    \033[38;5;33m|_|\\_\\\033[38;5;33m\\____|\033[0;0m\n");
 
-		var args:Array<String> = [];
-		var flags:Array<String> = [];
+		var args:Array<String> = parsed[0];
+		var flags:Array<String> = parsed[1];
 
-		for (arg in oldArgs)
-		{
-			arg = arg.trim();
-
-			if (arg.startsWith('--'))
-			{
-				arg = arg.toLowerCase();
-				if (arg == '--no-color')
-					continue;
-				flags.push(arg);
-			}
-			else
-				args.push(arg);
-		}
-
-		if (args.length == 0)
-		{
-			Sys.println('Not enough arguments. Run `haxelib run hxpkg help` for help');
-			return;
-		}
-
-		var cmd = args.shift();
+		var cmd = args.shift().toLowerCase();
 		if (validFlags.exists(cmd))
 			for (flag in flags)
 				if (!validFlags[cmd].contains(flag))
-					Sys.println('WARN: Unsupported flag for $cmd: $flag');
+					Sys.println('Unsupported flag for $cmd command: $flag');
 
-		switch (cmd.toLowerCase())
+		switch (cmd)
 		{
 			case 'install':
-				install(args, flags.contains('--global'), flags.contains('--quiet'), flags.contains('--force'));
+				install(args, flags.contains('--global'), flags.contains('--force'));
 			case 'add':
 				add(args, flags.contains('--beautify'));
 			case 'remove':
@@ -79,86 +49,60 @@ class Main
 			case 'clear':
 				clear();
 			case 'uninstall':
-				uninstall(args, flags.contains('--remove-all'), flags.contains('--quiet'));
+				uninstall(args, flags.contains('--force'), flags.contains('--remove-all'));
 			case 'list':
 				list();
+			case 'update':
+				Util.savePKGFile(Util.parsePKGFile(), flags.contains('--beautify'));
 			case 'help':
-				Sys.println("Usage: haxelib run hxpkg [command] [options]
-
-Commands:
-
-haxelib run hxpkg install - Installs all packages from the .hxpkg file
-haxelib run hxpkg add - Adds a package to the .hxpkg file (Add multiple by seperating with commas)
-	haxelib run hxpkg add [name] [version/git link] [branch name/git hash]
-haxelib run hxpkg remove - Removes a package from the .hxpkg file
-haxelib run hxpkg clear - Removes all packages from the .hxpkg file
-haxelib run hxpkg uninstall - Removes all packages installed by the .hxpkg file
-	NOTE: Does not remove dependencies
-haxelib run hxpkg list - Lists all packages in the .hxpkg file
-haxelib run hxpkg help - Shows help information
-
-Options:
-
---no-color: Disables Color Printing
---quiet: Silent Install/Uninstall
-
-install:
-	--global: Installs packages globally
-	--quiet: Silent Install
-	--force: Installs even if .haxelib exists
-add, remove:
-	--beautify: Formats the .hxpkg file
-uninstall:
-	--remove-all: Removes the local repo
-	--quiet: Silent Uninstall");
+				help();
 			default:
-				Sys.println('WARN: $cmd is not a valid command. Run `haxelib run hxpkg help` for help');
+				Sys.println('$cmd is not a valid command. Run "haxelib run hxpkg help" for help');
 		}
 	}
 
-	static function install(args:Array<String>, global:Bool, quiet:Bool, force:Bool):Void
+	static function install(args:Array<String>, global:Bool, force:Bool):Void
 	{
-		if (!HxPKG())
-		{
-			Sys.println('.hxpkg does not exist, aborting.');
-			return;
-		}
-
-		var content = File.getContent('.hxpkg').trim();
-		if (content == '')
-			content = '[]';
-		var hxpkgFile:HxPKGFile = Json.parse(content);
+		Util.checkPKGFile(true);
+		var pkgFile = Util.parsePKGFile();
 
 		if (!global)
-			if (Haxelib())
+			if (Util.checkLocalHaxelib())
+			{
 				if (!force)
 				{
-					Sys.println('.haxelib exists, aborting. (Run with --force to continue anyway)');
-					return;
+					Sys.println('.haxelib exists, aborting (Run with --force to continue anyway)');
+					Sys.exit(1);
 				}
-				else
-				{
-					if (!quiet)
-						Sys.println('.haxelib exists, continuing (--force)');
-				}
-			else
-			{
-				var proc = new Process('haxelib', ['newrepo', '--quiet']);
-				proc.stdout.readAll();
-				proc.exitCode();
+				else if (!quiet)
+					Sys.println('.haxelib exists, continuing (--force)');
 			}
+			else
+				Util.process('haxelib', ['--quiet', 'newrepo']);
+
+		var pkgs = pkgFile["default"];
+
+		for (arg in args)
+			if (pkgFile.exists(arg.trim()))
+				pkgs.concat(pkgFile[arg.trim()]);
 
 		if (quiet)
-			Sys.print('Installing package${if (hxpkgFile.length > 1) 's' else ''} ${[for (pkg in hxpkgFile) pkg.name].join(', ')}... ');
+			Sys.print('Installing package${pkgs.length > 1 ? 's' : ''} ${[for (pkg in pkgs) pkg.name].join(', ')}... \033[s');
 
 		var failedPackages:Array<String> = [];
-		for (pkg in hxpkgFile)
+
+		for (i => pkg in pkgs)
 		{
 			if (!quiet)
-				Sys.print('Installing package ${pkg.name}... ');
+				Sys.print('Installing package ${pkg.name}... \033[K\033[s');
 
-			var hxargs:Array<String> = [];
-			var failMsg = '';
+			Sys.println('\033[u\n[' + ''.rpad('=', Std.int((i + 1) / pkgs.length * 40)).rpad('-', 40) + ']');
+
+			var hxargs = ['--never', '--skip-dependencies', '--quiet'];
+			if (global)
+				hxargs.push('--global');
+			var failMsg:String = null;
+
 			if (pkg.link == null)
 			{
 				hxargs.push('install');
@@ -172,193 +116,210 @@ uninstall:
 				hxargs.push('git');
 				hxargs.push(pkg.name);
 				hxargs.push(pkg.link);
-				if (pkg.hash != null)
-					hxargs.push(pkg.hash);
-				else if (pkg.branch != null)
+				if (pkg.branch != null)
 					hxargs.push(pkg.branch);
 				failMsg = 'Check the github repository.';
 			}
 
-			if (global)
-				hxargs.unshift('--global');
-
-			var proc = new Process('haxelib', hxargs.concat(['--never', '--skip-dependencies', '--quiet']));
-			proc.stdout.readAll(); // WHY DOES THIS FIX IT??
-
-			if (proc.exitCode() != 0)
+			if (Util.process('haxelib', hxargs) != 0)
 			{
 				if (!quiet)
-					Sys.println('failed. $failMsg');
+					Sys.println('\033[ufailed. $failMsg');
 				failedPackages.push(pkg.name);
 			}
-			else
-			{
-				if (!quiet)
-					Sys.println('done.');
-			}
+			else if (!quiet)
+				Sys.println('\033[udone.');
 		}
 
 		if (failedPackages.length > 0)
 		{
 			if (quiet)
-				Sys.println('failed.');
+				Sys.println('\033[ufailed.');
 			Sys.println('Failed to install ${[for (pkg in failedPackages) pkg].join(', ')}.');
 		}
-		else
+		else if (quiet)
+			Sys.println('\033[udone.');
+
+		// git HXCPP auto setup
+		if ([
+			for (pkg in pkgs)
+				if (pkg.name == 'hxcpp' && pkg.link != null && !failedPackages.contains('hxcpp')) pkg
+		].length > 0)
 		{
-			if (quiet)
-				Sys.println('done.');
+			Sys.print('\033[KSetting up hxcpp... ');
+			var curCwd = Sys.getCwd();
+			var pathProc = new Process('haxelib', ['libpath', 'hxcpp']);
+			pathProc.exitCode();
+			var path = pathProc.stdout.readAll().toString().trim();
+			pathProc.close();
+			Sys.setCwd(Path.join([path, 'tools', 'run']));
+			Util.process('haxe', ['compile.hxml']);
+			Sys.setCwd(Path.join([path, 'tools', 'hxcpp']));
+			Util.process('haxe', ['compile.hxml']);
+			Sys.setCwd(curCwd);
+			Sys.println('done.');
 		}
 	}
 
 	static function add(args:Array<String>, beautify:Bool):Void
 	{
-		if (!HxPKG())
+		if (!Util.checkPKGFile())
 			File.saveContent('.hxpkg', '[]');
 
-		var content = File.getContent('.hxpkg').trim();
-		if (content == '')
-			content = '[]';
-		var hxpkgFile:HxPKGFile = Json.parse(content);
+		var pkgFile = Util.parsePKGFile();
 
-		var map:Map<String, PKG> = [for (pkg in hxpkgFile) pkg.name => pkg];
-
-		// https://stackoverflow.com/questions/3809401/what-is-a-good-regular-expression-to-match-a-url
-		final urlMatch = new EReg('https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)', 'i');
-
-		// Thank you ChatGPT
-		final hashMatch = ~/\b[0-9a-f]{40}\b/;
-
-		for (pkg in [for (arg in args.join(" ").split(",")) arg.trim().split(" ")])
+		if (args.length == 0)
 		{
-			if (map.exists(pkg[0]))
-			{
-				Sys.println('Package ${pkg[0]} already exists in the .hxpkg. Continuing...');
-				continue;
-			}
-
-			if (pkg.length >= 3)
-				if (hashMatch.match(pkg[2]))
-					hxpkgFile.push({
-						name: pkg[0],
-						link: pkg[1],
-						hash: pkg[2]
-					});
-				else
-					hxpkgFile.push({
-						name: pkg[0],
-						link: pkg[1],
-						branch: pkg[2]
-					});
-			else
-			{
-				if (pkg[1] == null)
-					hxpkgFile.push({
-						name: pkg[0]
-					});
-				else
-				{
-					if (urlMatch.match(pkg[1]))
-						hxpkgFile.push({
-							name: pkg[0],
-							link: pkg[1]
-						});
-					else
-						hxpkgFile.push({
-							name: pkg[0],
-							version: pkg[1]
-						});
-				}
-			}
-			Sys.println('Added package ${pkg[0]} to .hxpkg.');
+			Sys.println('Not enough arguments. Run "haxelib run hxpkg help" for help');
+			Sys.exit(1);
 		}
 
-		if (beautify)
-			File.saveContent('.hxpkg', Json.stringify(hxpkgFile, null, '\t'));
-		else
-			File.saveContent('.hxpkg', Json.stringify(hxpkgFile));
+		var profile:String = 'default';
+
+		if (args.indexOf('profile') != -1)
+		{
+			if (args.indexOf('profile') + 1 >= args.length)
+			{
+				Sys.println('No profile specified, aborting');
+				Sys.exit(1);
+			}
+
+			profile = args[args.indexOf('profile') + 1].trim();
+			if (pkgFile[profile] == null)
+				pkgFile.set(profile, []);
+			args = args.splice(0, args.indexOf('profile'));
+		}
+
+		var packages = pkgFile[profile];
+		if (profile != 'default')
+			packages.concat(pkgFile['default']);
+
+		final pkgMap = [for (pkg in packages) pkg.name => pkg];
+
+		if (pkgMap.exists(args[0]))
+		{
+			Sys.println('Package ${args[0]} already exists in the .hxpkg, aborting');
+			Sys.exit(1);
+		}
+
+		var pkg:PKG = {name: args[0]}
+
+		if (args.length >= 3)
+		{
+			pkg.link = args[1];
+			pkg.branch = args[2];
+		}
+		else if (args[1] != null)
+		{
+			if (urlMatch.match(args[1]))
+				pkg.link = args[1];
+			else
+				pkg.version = args[1];
+		}
+
+		pkgFile[profile].push(pkg);
+		Sys.println('Added package ${args[0]}${profile != null ? ' (profile $profile)' : ''} to .hxpkg');
+		Util.savePKGFile(pkgFile, beautify);
 	}
 
 	static function remove(args:Array<String>, beautify:Bool):Void
 	{
-		if (!HxPKG())
-			File.saveContent('.hxpkg', '[]');
+		Util.checkPKGFile(true);
+		var pkgFile = Util.parsePKGFile();
 
-		var content = File.getContent('.hxpkg').trim();
-		if (content == '')
-			content = '[]';
-		var hxpkgFile:HxPKGFile = Json.parse(content);
+		if (args.length == 0)
+		{
+			Sys.println('Not enough arguments. Run "haxelib run hxpkg help" for help');
+			Sys.exit(1);
+		}
 
-		var map:Map<String, PKG> = [for (pkg in hxpkgFile) pkg.name => pkg];
+		var profile:String = 'default';
 
-		for (pkg in args)
-			if (map.exists(pkg))
+		if (args.indexOf('profile') != -1)
+		{
+			if (args.indexOf('profile') + 1 >= args.length)
 			{
-				Sys.println('Removed package ${pkg} from .hxpkg.');
-				hxpkgFile.remove(map[pkg]);
+				Sys.println('No profile specified, aborting');
+				Sys.exit(1);
 			}
-			else
-				Sys.println('Package $pkg does not exist in the .hxpkg.');
 
-		if (beautify)
-			File.saveContent('.hxpkg', Json.stringify(hxpkgFile, null, '\t'));
-		else
-			File.saveContent('.hxpkg', Json.stringify(hxpkgFile));
+			profile = args[args.indexOf('profile') + 1].trim();
+			if (pkgFile[profile] == null)
+				pkgFile.set(profile, []);
+			args = args.splice(0, args.indexOf('profile'));
+		}
+
+		var packages = pkgFile[profile];
+		if (profile != 'default')
+			packages.concat(pkgFile['default']);
+
+		final pkgMap = [for (pkg in packages) pkg.name => pkg];
+
+		for (arg in args)
+		{
+			if (!pkgMap.exists(arg))
+			{
+				Sys.println('Package $arg doesn\'t exist in the .hxpkg, continuing');
+				continue;
+			}
+
+			pkgFile[profile].remove(pkgMap[arg]);
+			Sys.println('Removed package ${arg}${profile != 'default' ? ' (profile $profile)' : ''} from .hxpkg');
+		}
+
+		if (pkgFile[profile].length == 0)
+			pkgFile.remove(profile);
+
+		Util.savePKGFile(pkgFile, beautify);
 	}
 
 	static function clear():Void
 	{
 		File.saveContent('.hxpkg', '[]');
-		Sys.println('Cleared all packages from the .hxpkg file.');
 	}
 
-	static function uninstall(args:Array<String>, removeAll:Bool, quiet:Bool):Void
+	static function uninstall(args:Array<String>, force:Bool, removeAll:Bool):Void
 	{
-		if (!Haxelib())
-		{
-			Sys.println('.haxelib does not exist, aborting.');
-			return;
-		}
+		if (!Util.checkLocalHaxelib())
+			if (!force)
+			{
+				Sys.println('.haxelib exists, aborting (Run with --force to continue anyway)');
+				Sys.exit(1);
+			}
+			else if (!quiet)
+				Sys.println('.haxelib exists, continuing (--force)');
 
-		if (!HxPKG())
-		{
-			Sys.println('.hxpkg does not exist, aborting.');
-			return;
-		}
+		Util.checkPKGFile(true);
+		var pkgFile = Util.parsePKGFile();
 
 		if (removeAll)
 		{
-			var proc = new Process('haxelib', ['deleterepo', '--quiet']);
-			proc.stdout.readAll();
-			proc.exitCode();
-			Sys.println('Uninstalled all packages successfully.');
+			Util.process('haxelib', ['--quiet', 'deleterepo']);
+			Sys.println('Uninstalled all packages successfully');
 		}
 		else
 		{
-			var content = File.getContent('.hxpkg').trim();
-			if (content == '')
-				content = '[]';
-			var hxpkgFile:HxPKGFile = Json.parse(content);
+			var profile:String = 'default';
 
+			if (args.length > 0)
+				profile = args[0].trim();
+
+			var packages = pkgFile[profile];
+			if (profile != 'default')
+				packages.concat(pkgFile['default']);
 			var failedPackages:Array<String> = [];
-			for (pkg in hxpkgFile)
+			for (pkg in packages)
 			{
 				if (!quiet)
 					Sys.print('Uninstalling package ${pkg.name}... ');
-				var proc = new Process('haxelib', ['remove', pkg.name, '--never', '--quiet']);
-				proc.stdout.readAll(); // WHY DOES THIS FIX IT??
-				var exitCode = proc.exitCode();
-				if (exitCode != 0)
+				if (Util.process('haxelib', ['--never', '--quiet', 'remove', pkg.name]) != 0)
 				{
 					if (!quiet)
 						Sys.println('failed.');
 					failedPackages.push(pkg.name);
 				}
-				else
-				{
-					if (!quiet)
-						Sys.println('done.');
-				}
+				else if (!quiet)
+					Sys.println('done. ');
 			}
 
 			if (failedPackages.length > 0)
@@ -370,38 +331,76 @@ uninstall:
 
 	static function list():Void
 	{
-		if (!HxPKG())
+		Util.checkPKGFile(true);
+		var pkgFile = Util.parsePKGFile();
+
+		var allpkgs = [];
+		for (pkgs in pkgFile)
+			allpkgs = allpkgs.concat(pkgs);
+
+		if (allpkgs.length == 0)
 		{
-			Sys.println('.hxpkg does not exist, aborting.');
-			return;
+			Sys.println('No packages to list, aborting');
+			Sys.exit(1);
 		}
 
-		var content = File.getContent('.hxpkg').trim();
-		if (content == '')
-			content = '[]';
-		var hxpkgFile:HxPKGFile = Json.parse(content);
+		var msgs:Array<String> = [];
 
-		for (pkg in hxpkgFile)
+		for (profile => packages in pkgFile)
 		{
-			var msg = pkg.name;
-			if (pkg.version != null)
-				msg += ' - ${pkg.version}';
-			else
+			var msg = '$profile:\n';
+
+			for (pkg in packages)
 			{
-				if (pkg.link != null)
-					msg += ' - ${pkg.link}';
-				if (pkg.hash != null)
-					msg += ' - ${pkg.hash}';
-				else if (pkg.branch != null)
-					msg += ' - ${pkg.branch}';
+				var pkgmsg = pkg.name;
+
+				if (pkg.version != null)
+					pkgmsg += ' ${pkg.version}';
+				else if (pkg.link != null)
+				{
+					pkgmsg += ' ${pkg.link}';
+					if (pkg.branch != null)
+						pkgmsg += ' ${pkg.branch}';
+				}
+
+				msg += '$pkgmsg\n';
 			}
-			Sys.println(msg);
+			msgs.push(msg);
 		}
+
+		ArraySort.sort(msgs, (a, b) -> (a > b ? 1 : a < b ? -1 : 0));
+		for (msg in msgs)
+			Sys.println(msg);
 	}
 
-	static inline function HxPKG():Bool
-		return FileSystem.exists('.hxpkg');
+	static function help():Void
+	{
+		Sys.println("Usage: haxelib run hxpkg [command] [flags]
 
-	static inline function Haxelib():Bool
-		return FileSystem.exists('.haxelib');
+Commands:
+
+haxelib run hxpkg install - Installs all packages from the .hxpkg file
+haxelib run hxpkg add - Adds a package to the .hxpkg file
+	haxelib run hxpkg add [name] [version/git link] [branch/hash] profile [profile]
+    NOTE: Only name is required
+haxelib run hxpkg remove - Removes a package from the .hxpkg file
+haxelib run hxpkg clear - Removes all packages from the .hxpkg file
+haxelib run hxpkg uninstall - Removes all packages installed by the .hxpkg file
+	NOTE: Does not remove dependencies
+haxelib run hxpkg list - Lists all packages in the .hxpkg file
+haxelib run hxpkg update - Updates the .hxpkg file to the new format
+	NOTE: Also happens when attempting to add a package profile in the old format
+haxelib run hxpkg help - Shows help information
+
+Flags:
+--quiet: Silent Install/Uninstall
+--force: Installs/Uninstalls even if .haxelib exists
+
+install:
+	--global: Installs packages globally
+add, remove, update:
+	--beautify: Formats the .hxpkg file
+- uninstall:
+	--remove-all: Removes the local repo");
+	}
 }
