@@ -54,6 +54,7 @@ class Main
 				list();
 			case 'update':
 				Util.savePKGFile(Util.parsePKGFile(), flags.contains('--beautify'));
+				Sys.println('.hxpkg updated');
 			case 'help':
 				help();
 			default:
