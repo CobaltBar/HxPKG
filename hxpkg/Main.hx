@@ -10,12 +10,8 @@ using StringTools;
 
 class Main
 {
-	static final validFlags:Map<String, Array<String>> = [
-		'install' => ['--global', '--force'],
-		'add' => ['--beautify'],
-		'remove' => ['--beautify'],
-		'uninstall' => ['--remove-all'],
-	];
+	// A bit overkill but i'm too lazy to rework it
+	static final validFlags:Map<String, Array<String>> = ['install' => ['--global', '--force'], 'uninstall' => ['--remove-all']];
 
 	// https://stackoverflow.com/questions/3809401/what-is-a-good-regular-expression-to-match-a-url
 	static final urlMatch = new EReg('https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)', 'i');
@@ -31,6 +27,11 @@ class Main
 
 		var args:Array<String> = parsed[0];
 		var flags:Array<String> = parsed[1];
+		if (args.length == 0)
+		{
+			Sys.println('Not enough arguments. Run "hxpkg help" for help');
+			Sys.exit(1);
+		}
 
 		var cmd = args.shift().toLowerCase();
 		if (validFlags.exists(cmd))
@@ -43,22 +44,27 @@ class Main
 			case 'install':
 				install(args, flags.contains('--global'), flags.contains('--force'));
 			case 'add':
-				add(args, flags.contains('--beautify'));
+				add(args);
 			case 'remove':
-				remove(args, flags.contains('--beautify'));
+				remove(args);
 			case 'clear':
 				clear();
 			case 'uninstall':
 				uninstall(args, flags.contains('--force'), flags.contains('--remove-all'));
 			case 'list':
 				list();
-			case 'update':
-				Util.savePKGFile(Util.parsePKGFile(), flags.contains('--beautify'));
+			case 'upgrade':
+				Util.savePKGFile(Util.parsePKGFile());
 				Sys.println('.hxpkg updated');
+			case 'compact':
+				Util.savePKGFile(Util.parsePKGFile(), false);
+				Sys.println('.hxpkg compacted');
+			case 'setup':
+				setupAlias();
 			case 'help':
 				help();
 			default:
-				Sys.println('$cmd is not a valid command. Run "haxelib run hxpkg help" for help');
+				Sys.println('$cmd is not a valid command. Run "hxpkg help" for help');
 		}
 	}
 
@@ -87,6 +93,8 @@ class Main
 			if (pkgFile.exists(arg.trim()))
 				pkgs.concat(pkgFile[arg.trim()]);
 
+		var dontSkipDependencies:Array<String> = Util.getExceptions();
+
 		if (quiet)
 			Sys.print('Installing package${pkgs.length > 1 ? 's' : ''} ${[for (pkg in pkgs) pkg.name].join(', ')}... \033[s');
 
@@ -99,7 +107,10 @@ class Main
 
 			Sys.println('\033[u\n[' + ''.rpad('=', Std.int((i + 1) / pkgs.length * 40)).rpad('-', 40) + ']');
 
-			var hxargs = ['--never', '--skip-dependencies', '--quiet'];
+			var hxargs = ['--never', '--quiet'];
+			if (!dontSkipDependencies.contains(pkg.name))
+				hxargs.insert(1, '--skip-dependencies');
+
 			if (global)
 				hxargs.push('--global');
 			var failMsg:String = null;
@@ -125,21 +136,21 @@ class Main
 			if (Util.process('haxelib', hxargs) != 0)
 			{
 				if (!quiet)
-					Sys.println('\033[ufailed. $failMsg');
+					Sys.println('\033[2A\033[ufailed. $failMsg');
 				failedPackages.push(pkg.name);
 			}
 			else if (!quiet)
-				Sys.println('\033[udone.');
+				Sys.println('\033[2A\033[udone.');
 		}
 
 		if (failedPackages.length > 0)
 		{
 			if (quiet)
-				Sys.println('\033[ufailed.');
+				Sys.println('\033[2A\033[ufailed.');
 			Sys.println('Failed to install ${[for (pkg in failedPackages) pkg].join(', ')}.');
 		}
 		else if (quiet)
-			Sys.println('\033[udone.');
+			Sys.println('\033[2A\033[udone.');
 
 		// git HXCPP auto setup
 		if ([
@@ -162,7 +173,7 @@ class Main
 		}
 	}
 
-	static function add(args:Array<String>, beautify:Bool):Void
+	static function add(args:Array<String>):Void
 	{
 		if (!Util.checkPKGFile())
 			File.saveContent('.hxpkg', '[]');
@@ -171,7 +182,7 @@ class Main
 
 		if (args.length == 0)
 		{
-			Sys.println('Not enough arguments. Run "haxelib run hxpkg help" for help');
+			Sys.println('Not enough arguments. Run "hxpkg help" for help');
 			Sys.exit(1);
 		}
 
@@ -220,17 +231,17 @@ class Main
 
 		pkgFile[profile].push(pkg);
 		Sys.println('Added package ${args[0]}${profile != null ? ' (profile $profile)' : ''} to .hxpkg');
-		Util.savePKGFile(pkgFile, beautify);
+		Util.savePKGFile(pkgFile);
 	}
 
-	static function remove(args:Array<String>, beautify:Bool):Void
+	static function remove(args:Array<String>):Void
 	{
 		Util.checkPKGFile(true);
 		var pkgFile = Util.parsePKGFile();
 
 		if (args.length == 0)
 		{
-			Sys.println('Not enough arguments. Run "haxelib run hxpkg help" for help');
+			Sys.println('Not enough arguments. Run "hxpkg help" for help');
 			Sys.exit(1);
 		}
 
@@ -271,7 +282,7 @@ class Main
 		if (pkgFile[profile].length == 0)
 			pkgFile.remove(profile);
 
-		Util.savePKGFile(pkgFile, beautify);
+		Util.savePKGFile(pkgFile);
 	}
 
 	static function clear():Void
@@ -374,24 +385,65 @@ class Main
 			Sys.println(msg);
 	}
 
+	/*
+		Based on:
+		https://github.com/openfl/hxp/blob/master/src/hxp/System.hx#L1505
+		https://github.com/openfl/lime/blob/develop/tools/utils/PlatformSetup.hx#L812
+	 */
+	static function setupAlias():Void
+	{
+		var sysName = Sys.systemName().toLowerCase();
+		try
+		{
+			if (sysName.contains('window'))
+			{
+				var haxePath:String = Sys.getEnv('HAXEPATH').trim();
+				if (haxePath == null || haxePath == '')
+					haxePath = 'C:\\HaxeToolkit\\haxe';
+
+				File.saveContent(Path.join([haxePath, 'hxpkg.bat']), '@echo off\nhaxelib --global run hxpkg %*');
+			}
+			else if (sysName.contains('linux') || sysName.contains('mac'))
+			{
+				File.saveContent(Path.join(["/usr/local/bin", 'hxpkg']), '#!/bin/sh\nhaxelib --global run hxpkg "$@"');
+				Sys.command('${sysName.contains('mac') ? '' : 'sudo '}chmod 775 ${Path.join(["/usr/local/bin", 'hxpkg'])}');
+			}
+			else
+			{
+				Sys.println('Installing the command line alias is not supported on this OS');
+				Sys.exit(1);
+			}
+
+			// THANK YOU CYN
+			Sys.println('Installed command-line alias "hxpkg" for "haxelib --global run hxpkg"');
+		}
+		catch (e)
+		{
+			Sys.println('Failed to install command-line alias');
+			Sys.exit(1);
+		}
+	}
+
 	static function help():Void
 	{
-		Sys.println("Usage: haxelib run hxpkg [command] [flags]
+		Sys.println("Usage: hxpkg [command] [flags]
 
 Commands:
 
-haxelib run hxpkg install - Installs all packages from the .hxpkg file
-haxelib run hxpkg add - Adds a package to the .hxpkg file
-	haxelib run hxpkg add [name] [version/git link] [branch/hash] profile [profile]
-    NOTE: Only name is required
-haxelib run hxpkg remove - Removes a package from the .hxpkg file
-haxelib run hxpkg clear - Removes all packages from the .hxpkg file
-haxelib run hxpkg uninstall - Removes all packages installed by the .hxpkg file
-	NOTE: Does not remove dependencies
-haxelib run hxpkg list - Lists all packages in the .hxpkg file
-haxelib run hxpkg update - Updates the .hxpkg file to the new format
-	NOTE: Also happens when attempting to add a package profile in the old format
-haxelib run hxpkg help - Shows help information
+hxpkg install - Installs all packages from the .hxpkg file
+hxpkg add - Adds a package to the .hxpkg file
+	hxpkg add [name] [version/git link] [branch/hash] profile [profile]
+    Only name is required
+hxpkg remove - Removes a package from the .hxpkg file
+hxpkg clear - Removes all packages from the .hxpkg file
+hxpkg uninstall - Removes all packages installed by the .hxpkg file
+	Does not remove dependencies
+hxpkg list - Lists all packages in the .hxpkg file
+hxpkg upgrade - Updates the .hxpkg file to the new format
+	Also happens when attempting to add a package profile in the old format
+hxpkg compact - Compacts the .hxpkg file
+hxpkg setup - Installs the command alias for hxpkg. Use \"haxelib --global run hxpkg setup\" to install
+hxpkg help - Shows help information
 
 Flags:
 --quiet: Silent Install/Uninstall
@@ -399,9 +451,7 @@ Flags:
 
 install:
 	--global: Installs packages globally
-add, remove, update:
-	--beautify: Formats the .hxpkg file
-- uninstall:
+uninstall:
 	--remove-all: Removes the local repo");
 	}
 }

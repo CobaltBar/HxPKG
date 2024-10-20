@@ -1,5 +1,6 @@
 package hxpkg;
 
+import haxe.Http;
 import haxe.Json;
 import hxpkg.PKGFile;
 import sys.FileSystem;
@@ -67,7 +68,7 @@ class Util
 		return code;
 	}
 
-	static function savePKGFile(pkgFile:PKGFile, beautify:Bool):Void
+	static function savePKGFile(pkgFile:PKGFile, beautify:Bool = true):Void
 	{
 		var json:JSONPKGFile = [];
 		for (profile => pkgs in pkgFile)
@@ -102,12 +103,17 @@ class Util
 				args.push(arg);
 		}
 
-		if (args.length == 0)
-		{
-			Sys.println('Not enough arguments. Run "haxelib run hxpkg help" for help');
-			Sys.exit(1);
-		}
-
 		return [args, flags];
+	}
+
+	static function getExceptions():Array<String>
+	{
+		var exceptions:Array<String> = [];
+		var request = new Http('https://github.com/CobaltBar/HxPKG/blob/main/noskip');
+		request.onError = (msg:String) -> {};
+		request.onData = (data:String) -> exceptions = data.trim().split('\n');
+		request.request();
+
+		return exceptions;
 	}
 }
