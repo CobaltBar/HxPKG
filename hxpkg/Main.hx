@@ -111,7 +111,7 @@ class Main
 			if (!dontSkipDependencies.contains(pkg.name))
 				hxargs.insert(1, '--skip-dependencies');
 
-			if (global || pkg.name == 'hxCodec')
+			if (global)
 				hxargs.push('--global');
 			var failMsg:String = null;
 
@@ -169,6 +169,21 @@ class Main
 			Sys.setCwd(Path.join([path, 'tools', 'hxcpp']));
 			Util.process('haxe', ['compile.hxml']);
 			Sys.setCwd(curCwd);
+			Sys.println('done.');
+		}
+
+		// i wish haxe 5 came sooner IM SICK OF HXCODEC'S ERRORS
+		if ([
+			for (pkg in pkgs)
+				if (pkg.name == 'hxCodec' && pkg.link != null && !failedPackages.contains('hxCodec')) pkg
+		].length > 0)
+		{
+			Sys.print('\033[KSetting up hxCodec... ');
+			var pathProc = new Process('haxelib', ['libpath', 'hxCodec']);
+			pathProc.exitCode();
+			var path = pathProc.stdout.readAll().toString().trim();
+			pathProc.close();
+			Util.process('haxelib', ['--global', 'dev', 'hxCodec', path]);
 			Sys.println('done.');
 		}
 	}
