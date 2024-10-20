@@ -93,7 +93,7 @@ class Main
 			if (pkgFile.exists(arg.trim()))
 				pkgs.concat(pkgFile[arg.trim()]);
 
-		var dontSkipDependencies:Array<String> = Util.getExceptions();
+		var dontSkipDependencies:Array<String> = ['grig.audio', 'hxCodec'];
 
 		if (quiet)
 			Sys.print('Installing package${pkgs.length > 1 ? 's' : ''} ${[for (pkg in pkgs) pkg.name].join(', ')}... \033[s');
@@ -107,11 +107,11 @@ class Main
 
 			Sys.println('\033[u\n[' + ''.rpad('=', Std.int((i + 1) / pkgs.length * 40)).rpad('-', 40) + ']');
 
-			var hxargs = ['--never', '--quiet'];
+			var hxargs = ['--always', '--quiet'];
 			if (!dontSkipDependencies.contains(pkg.name))
 				hxargs.insert(1, '--skip-dependencies');
 
-			if (global)
+			if (global || pkg.name == 'hxCodec')
 				hxargs.push('--global');
 			var failMsg:String = null;
 
@@ -147,7 +147,7 @@ class Main
 		{
 			if (quiet)
 				Sys.println('\033[2A\033[ufailed.');
-			Sys.println('Failed to install ${[for (pkg in failedPackages) pkg].join(', ')}.');
+			Sys.println('\033[KFailed to install ${[for (pkg in failedPackages) pkg].join(', ')}.');
 		}
 		else if (quiet)
 			Sys.println('\033[2A\033[udone.');

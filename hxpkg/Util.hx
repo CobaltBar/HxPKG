@@ -108,14 +108,4 @@ class Util
 
 		return [args, flags];
 	}
-
-	static function getExceptions():Array<String>
-	{
-		var exceptions:Array<String> = [];
-		var request = new Http('https://raw.githubusercontent.com/CobaltBar/HxPKG/refs/heads/main/noskip');
-		request.onData = (data:String) -> exceptions = data.trim().split('\n');
-		request.request();
-
-		return exceptions;
-	}
 }
