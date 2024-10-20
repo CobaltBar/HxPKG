@@ -91,7 +91,7 @@ class Main
 
 		for (arg in args)
 			if (pkgFile.exists(arg.trim()))
-				pkgs.concat(pkgFile[arg.trim()]);
+				pkgs = pkgs.concat(pkgFile[arg.trim()]);
 
 		var dontSkipDependencies:Array<String> = ['grig.audio', 'hxCodec'];
 
