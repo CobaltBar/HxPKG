@@ -27,9 +27,9 @@ Inspired by [hmm](https://github.com/andywhite37/hmm)
 - `hxpkg list` - Lists all packages in the .hxpkg file
 - `hxpkg upgrade` - Updates the .hxpkg file to the new format
 	- Also happens when attempting to add a package profile in the old format
-`hxpkg compact` - Compacts the .hxpkg file
-`hxpkg setup` - Installs the command alias for hxpkg. Use `haxelib --global run hxpkg setup` to install
-`hxpkg help` - Shows help information
+- `hxpkg compact` - Compacts the .hxpkg file
+- `hxpkg setup` - Installs the command alias for hxpkg. Use `haxelib --global run hxpkg setup` to install
+- `hxpkg help` - Shows help information
 
 ### Flags:
 
