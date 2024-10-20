@@ -12,6 +12,8 @@ using StringTools;
 @:publicFields
 class Util
 {
+	static var ogPath:String;
+
 	static function checkPKGFile(abort:Bool = false):Bool
 	{
 		var exists = FileSystem.exists('.hxpkg');
@@ -83,6 +85,7 @@ class Util
 		var flags:Array<String> = [];
 
 		var rawArgs = Sys.args();
+		ogPath = Sys.getCwd();
 		Sys.setCwd(rawArgs.pop());
 
 		for (arg in rawArgs)

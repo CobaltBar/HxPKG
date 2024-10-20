@@ -405,7 +405,7 @@ class Main
 			}
 			else if (sysName.contains('linux') || sysName.contains('mac'))
 			{
-				File.saveContent(Path.join(["/usr/local/bin", 'hxpkg']), '#!/bin/sh\nhaxelib --global run hxpkg "$@"');
+				Sys.command('${sysName.contains('mac') ? '' : 'sudo '}cp -f ${Path.join([Util.ogPath, 'hxpkg.sh'])} ${Path.join(["/usr/local/bin", 'hxpkg'])}');
 				Sys.command('${sysName.contains('mac') ? '' : 'sudo '}chmod 775 ${Path.join(["/usr/local/bin", 'hxpkg'])}');
 			}
 			else
