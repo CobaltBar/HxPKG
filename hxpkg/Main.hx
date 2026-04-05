@@ -1,5 +1,6 @@
 package hxpkg;
 
+import haxe.Json;
 import haxe.ds.ArraySort;
 import haxe.io.Path;
 import hxpkg.PKGFile;
@@ -69,9 +70,43 @@ class Main
 				setupAlias();
 			case 'help':
 				help();
+			case 'to-hmm':
+				convertToHMM(Util.parsePKGFile());
 			default:
 				Sys.println('$cmd is not a valid command. Run "hxpkg help" for help');
 		}
+	}
+
+	static function convertToHMM(pkgFile:PKGFile)
+	{
+		var hmmFile:Array<Dynamic> = [];
+		var packages:Array<PKG> = pkgFile.get('default');
+
+		for (pkg in packages)
+		{
+			var type:String = pkg?.link == null ? 'haxelib' : 'git';
+
+			switch (type)
+			{
+				case 'haxelib':
+					hmmFile.push({
+						name: pkg.name,
+						type: type,
+						version: pkg?.version
+					});
+
+				case 'git':
+					hmmFile.push({
+						name: pkg.name,
+						type: type,
+						dir: pkg?.dir,
+						ref: pkg?.branch,
+						url: pkg?.link
+					});
+			}
+		}
+
+		File.saveContent('hmm.json', Json.stringify({dependencies: hmmFile}, null, '	'));
 	}
 
 	static function install(args:Array<String>, global:Bool, force:Bool, update:Bool):Void
