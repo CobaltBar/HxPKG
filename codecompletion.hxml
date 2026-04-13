@@ -1,0 +1,4 @@
+-cp hxpkg
+-D analyzer-optimize
+-L prismcli
+--interp

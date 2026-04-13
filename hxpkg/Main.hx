@@ -1,24 +1,75 @@
-package hxpkg;
+package;
 
-import haxe.ds.ArraySort;
-import haxe.io.Path;
-import hxpkg.PKGFile;
-import sys.FileSystem;
-import sys.io.File;
-import sys.io.Process;
+import prismcli.CLI;
 
 using StringTools;
 
 class Main
 {
-	// A bit overkill but i'm too lazy to rework it
-	static final validFlags:Map<String, Array<String>> = [
-		'install' => ['--global', '--force', '--update'],
-		'uninstall' => ['--remove-all']
-	];
-
 	// https://stackoverflow.com/questions/3809401/what-is-a-good-regular-expression-to-match-a-url
 	static final urlMatch = new EReg('https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)', 'i');
+
+	public static function main():Void
+	{
+		var cli = new CLI("HxPKG", "Local haxelib package manager", "1.7.0");
+		cli.addDefaults();
+		cli.addFlag("quiet", "Silent run", ["--quiet", "-q"]);
+		cli.addFlag("force", "Bypass local haxelib repository warning", ["--force", "-f"]);
+
+		cli.addCommand("install", "Install all packages from the package manifest", cmd_install)
+			.addFlag("global", "Install packages globally", ["--global", "-g"])
+			.addFlag("update", "Update installed packages", ["--update", "-u"], String);
+
+		cli.addCommand("add", "Add a package to the package manifest", cmd_add)
+			.addArgument("name", "Package name")
+			.addArgument("version", "Haxelib version or git link", String, true)
+			.addArgument("branch", "Branch or git hash", String, true)
+			.addArgument("profile", "Package profile", String, true);
+
+		cli.addCommand("uninstall", "Uninstalls all packages listed in the package manifest - Does not include dependencies", cmd_uninstall)
+			.addFlag("remove_all", "Remove local repository", ["--remove-all"]);
+
+		cli.addCommand("list", "List all packages in the package repository", cmd_list);
+
+		cli.addCommand("lock", "Lock all versions in the package manifest", cmd_lock);
+
+		cli.addCommand("upgrade", "Upgrades the package manifest format if needed", cmd_upgrade);
+
+		cli.addCommand("compact", "Compact the package manifest", cmd_compact);
+
+		cli.addCommand("setup", "Set up the HxPKG command alias - Run \"haxelib --global run hxpkg setup\"", cmd_setup);
+
+		cli.run();
+	}
+
+	static function cmd_install(cli, args, flags:Map<String, Any>):Void
+	{
+		Util.checkPKGFile(true);
+		var pkgFile = Util.parsePKGFile();
+
+		var global = flags["global"] ?? false;
+		var update = flags["update"] ?? false;
+
+		
+	}
+
+	static function cmd_add(cli, args, flags):Void {}
+
+	static function cmd_uninstall(cli, args, flags):Void {}
+
+	static function cmd_list(cli, args, flags):Void {}
+
+	static function cmd_lock(cli, args, flags):Void {}
+
+	static function cmd_upgrade(cli, args, flags):Void {}
+
+	static function cmd_compact(cli, args, flags):Void {}
+
+	static function cmd_setup(cli, args, flags):Void {}
+}
+/*
+	class Main
+	{
 
 	public static var quiet:Bool = false;
 
@@ -36,12 +87,6 @@ class Main
 			Sys.println('Not enough arguments. Run "hxpkg help" for help');
 			Sys.exit(1);
 		}
-
-		var cmd = args.shift().toLowerCase();
-		if (validFlags.exists(cmd))
-			for (flag in flags)
-				if (!validFlags[cmd].contains(flag))
-					Sys.println('Unsupported flag for $cmd command: $flag');
 
 		switch (cmd)
 		{
@@ -501,7 +546,7 @@ class Main
 		Based on:
 		https://github.com/openfl/hxp/blob/master/src/hxp/System.hx#L1505
 		https://github.com/openfl/lime/blob/develop/tools/utils/PlatformSetup.hx#L812
-	 */
+	*\/
 	static function setupAlias():Void
 	{
 		var sysName = Sys.systemName().toLowerCase();
@@ -540,32 +585,33 @@ class Main
 	{
 		Sys.println("Usage: hxpkg [command] [flags]
 
-Commands:
+	Commands:
 
-hxpkg install - Installs all packages from the .hxpkg file
-hxpkg add - Adds a package to the .hxpkg file
+	hxpkg install - Installs all packages from the .hxpkg file
+	hxpkg add - Adds a package to the .hxpkg file
 	hxpkg add [name] [version/git link] [branch/hash] profile [profile]
-    Only name is required
-hxpkg remove - Removes a package from the .hxpkg file
-hxpkg clear - Removes all packages from the .hxpkg file
-hxpkg uninstall - Removes all packages installed by the .hxpkg file
+	Only name is required
+	hxpkg remove - Removes a package from the .hxpkg file
+	hxpkg clear - Removes all packages from the .hxpkg file
+	hxpkg uninstall - Removes all packages installed by the .hxpkg file
 	Does not remove dependencies
-hxpkg list - Lists all packages in the .hxpkg file
-hxpkg lock - Locks all package versions in the .hxpkg file
-hxpkg upgrade - Updates the .hxpkg file to the new format
+	hxpkg list - Lists all packages in the .hxpkg file
+	hxpkg lock - Locks all package versions in the .hxpkg file
+	hxpkg upgrade - Updates the .hxpkg file to the new format
 	Also happens when attempting to add a package profile in the old format
-hxpkg compact - Compacts the .hxpkg file
-hxpkg setup - Installs the command alias for hxpkg. Use \"haxelib --global run hxpkg setup\" to install
-hxpkg help - Shows help information
+	hxpkg compact - Compacts the .hxpkg file
+	hxpkg setup - Installs the command alias for hxpkg. Use \"haxelib --global run hxpkg setup\" to install
+	hxpkg help - Shows help information
 
-Flags:
---quiet: Silent Install/Uninstall
---force: Installs/Uninstalls even if .haxelib exists
+	Flags:
+	--quiet: Silent Install/Uninstall
+	--force: Installs/Uninstalls even if .haxelib exists
 
-install:
+	install:
 	--global: Installs packages globally
 	--update: Updates installed packages to the latest version
-uninstall:
+	uninstall:
 	--remove-all: Removes the local repo");
 	}
-}
+	}
+ */

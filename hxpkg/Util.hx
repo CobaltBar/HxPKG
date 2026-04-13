@@ -1,6 +1,5 @@
-package hxpkg;
+package;
 
-import haxe.Http;
 import haxe.Json;
 import haxe.io.Path;
 import hxpkg.PKGFile;
@@ -78,36 +77,6 @@ class Util
 			json.push({profile: profile, pkgs: pkgs});
 
 		File.saveContent('.hxpkg', Json.stringify(json, null, beautify ? '\t' : null));
-	}
-
-	static function parseArgs():Array<Array<String>>
-	{
-		var args:Array<String> = [];
-		var flags:Array<String> = [];
-
-		var rawArgs = Sys.args();
-		ogPath = Sys.getCwd();
-		Sys.setCwd(rawArgs.pop());
-
-		for (arg in rawArgs)
-		{
-			arg = arg.trim();
-
-			if (arg.startsWith('--'))
-			{
-				arg = arg.toLowerCase();
-				if (arg == '--quiet')
-				{
-					Main.quiet = true;
-					continue;
-				}
-				flags.push(arg);
-			}
-			else
-				args.push(arg);
-		}
-
-		return [args, flags];
 	}
 
 	static function getHaxelibVersion(libraryName:String, ?global:Bool = false):Null<String>

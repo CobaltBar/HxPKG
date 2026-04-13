@@ -7,12 +7,15 @@
 		"helpers",
 		"installation"
 	],
-	"description": "Local haxelib package installer",
-	"version": "1.6.2",
+	"description": "Local haxelib package manager",
+	"version": "1.7.0",
 	"classPath": "hxpkg",
-	"releasenote": "Install --update argument",
+	"releasenote": "PrismCLI-based Rewrite + single-package mode",
 	"contributors": [
 		"CCobaltDev"
 	],
-	"main": "hxpkg.Main"
+	"dependencies": {
+		"prismcli": ""
+	},
+	"main": "Main"
 }
