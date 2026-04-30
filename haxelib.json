@@ -15,7 +15,7 @@
 		"CCobaltDev"
 	],
 	"dependencies": {
-		"prismcli": ""
+		"prismcli": "1.2.0"
 	},
 	"main": "Main"
 }

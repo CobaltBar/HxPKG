@@ -25,7 +25,7 @@ class Util
 		return exists;
 	}
 
-	static function checkLocalHaxelib():Bool
+	static function hasLocalHaxelib():Bool
 		return FileSystem.exists('.haxelib');
 
 	static function parsePKGFile():PKGFile
@@ -38,7 +38,7 @@ class Util
 		}
 		catch (e)
 		{
-			Sys.println('Invalid .hxpkg');
+			Sys.println('Invalid package manifest');
 			Sys.exit(1);
 		}
 
@@ -53,7 +53,7 @@ class Util
 
 			if (!retPKG.exists('default'))
 			{
-				Sys.println('Invalid .hxpkg');
+				Sys.println('Invalid package manifest');
 				Sys.exit(1);
 			}
 		}
